@@ -6,9 +6,25 @@
 
 namespace vre {
 
-	VrePipeline::VrePipeline(const std::string& vertFilepath, const std::string& fragFilepath)
+	VrePipeline::VrePipeline(
+		VreDevice& device, 
+		const std::string& vertFilepath, 
+		const std::string& fragFilepath, 
+		const PipelineConfigInfo& configInfo) 
+		: vreDevice{device}
 	{
-		createGraphicsPipeline(vertFilepath, fragFilepath);
+		createGraphicsPipeline(vertFilepath, fragFilepath, configInfo);
+	}
+
+	VrePipeline::~VrePipeline()
+	{
+	}
+
+	PipelineConfigInfo VrePipeline::defaultPipelineConfigInfo(uint32_t width, uint32_t height)
+	{
+		PipelineConfigInfo configInfo{};
+
+		return configInfo;
 	}
 
 	std::vector<char> VrePipeline::readFile(const std::string& filepath)
@@ -30,12 +46,23 @@ namespace vre {
 		return buffer;
 	}
 
-	void VrePipeline::createGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath)
+	void VrePipeline::createGraphicsPipeline(const std::string& vertFilepath, const std::string& fragFilepath, const PipelineConfigInfo& configInfo)
 	{
 		auto vertCode = readFile(vertFilepath);
 		auto fragCode = readFile(fragFilepath);
 
 		std::cout << "Vertex Shader Code Size: " << vertCode.size() << '\n';
 		std::cout << "Fragment Shader Code Size: " << fragCode.size() << '\n';
+	}
+	void VrePipeline::createShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule)
+	{
+		VkShaderModuleCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = code.size();
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+		if (vkCreateShaderModule(vreDevice.device(), &createInfo, nullptr, shaderModule) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create shader module");
+		}
 	}
 }

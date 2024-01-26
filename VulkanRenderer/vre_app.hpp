@@ -2,6 +2,7 @@
 
 #include "vre_window.hpp"
 #include "vre_pipeline.hpp"
+#include "vre_device.hpp"
 
 namespace vre {
 	class VreApp {
@@ -14,6 +15,7 @@ namespace vre {
 
 	private:
 		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
-		VrePipeline vrePipeline{ "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv" };
+		VreDevice vreDevice{ vreWindow };
+		VrePipeline vrePipeline{ vreDevice, "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv", VrePipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
 	};
 }
