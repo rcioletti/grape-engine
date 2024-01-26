@@ -3,6 +3,10 @@
 #include "vre_window.hpp"
 #include "vre_pipeline.hpp"
 #include "vre_device.hpp"
+#include "vre_swap_chain.hpp"
+
+#include <memory>
+#include <vector>
 
 namespace vre {
 	class VreApp {
@@ -11,11 +15,25 @@ namespace vre {
 		static constexpr int WIDTH = 800;
 		static constexpr int HEIGHT = 600;
 
+		VreApp();
+		~VreApp();
+
+		VreApp(const VreApp&) = delete;
+		VreApp& operator=(const VreApp&) = delete;
+
 		void run();
 
 	private:
+		void createPipelineLayout();
+		void createPipeline();
+		void createCommandBuffers();
+		void drawFrame();
+
 		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
 		VreDevice vreDevice{ vreWindow };
-		VrePipeline vrePipeline{ vreDevice, "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv", VrePipeline::defaultPipelineConfigInfo(WIDTH, HEIGHT)};
+		VreSwapChain vreSwapChain{ vreDevice, vreWindow.getExtent() };
+		std::unique_ptr<VrePipeline> vrePipeline;
+		VkPipelineLayout pipelineLayout;
+		std::vector<VkCommandBuffer> commandBuffers;
 	};
 }

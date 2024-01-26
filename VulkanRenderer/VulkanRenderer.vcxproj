@@ -147,6 +147,7 @@
     <ClCompile Include="vre_app.cpp" />
     <ClCompile Include="vre_device.cpp" />
     <ClCompile Include="vre_pipeline.cpp" />
+    <ClCompile Include="vre_swap_chain.cpp" />
     <ClCompile Include="vre_window.cpp" />
     <ClCompile Include="vre_window.hpp" />
   </ItemGroup>
@@ -154,6 +155,7 @@
     <ClInclude Include="vre_app.hpp" />
     <ClInclude Include="vre_device.hpp" />
     <ClInclude Include="vre_pipeline.hpp" />
+    <ClInclude Include="vre_swap_chain.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\simple_shader.frag" />
