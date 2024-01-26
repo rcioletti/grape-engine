@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vre_window.hpp"
+#include "vre_pipeline.hpp"
 
 namespace vre {
 	class VreApp {
@@ -13,5 +14,6 @@ namespace vre {
 
 	private:
 		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
+		VrePipeline vrePipeline{ "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv" };
 	};
 }
