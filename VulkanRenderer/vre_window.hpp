@@ -16,6 +16,8 @@ namespace vre {
 
 		bool shoudClose() { return glfwWindowShouldClose(window); }
 
+		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surf);
+
 	private:
 		void initWindow();
 
