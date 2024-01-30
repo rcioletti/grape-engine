@@ -31,9 +31,9 @@ namespace vre {
 	void VreApp::loadModels()
 	{
 		std::vector<VreModel::Vertex> vertices{
-			{{0.0f, -0.5}},
-			{{0.5f, 0.5}},
-			{{-0.5f, 0.5}}
+			{{0.0f, -0.5}, {1.0, 0.0f, 0.0f}},
+			{{0.5f, 0.5}, {0.0, 1.0f, 0.0f}},
+			{{-0.5f, 0.5}, {0.0, 0.0f, 1.0f}}
 		};
 
 		vreModel = std::make_unique<VreModel>(vreDevice, vertices);
