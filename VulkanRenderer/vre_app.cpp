@@ -7,6 +7,7 @@ namespace vre {
 
 	VreApp::VreApp()
 	{
+		loadModels();
 		createPipelineLayout();
 		createPipeline();
 		createCommandBuffers();
@@ -25,6 +26,17 @@ namespace vre {
 		}
 
 		vkDeviceWaitIdle(vreDevice.device());
+	}
+
+	void VreApp::loadModels()
+	{
+		std::vector<VreModel::Vertex> vertices{
+			{{0.0f, -0.5}},
+			{{0.5f, 0.5}},
+			{{-0.5f, 0.5}}
+		};
+
+		vreModel = std::make_unique<VreModel>(vreDevice, vertices);
 	}
 
 	void VreApp::createPipelineLayout()
@@ -51,7 +63,6 @@ namespace vre {
 
 	void VreApp::createCommandBuffers()
 	{
-
 		commandBuffers.resize(vreSwapChain.imageCount());
 
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -89,7 +100,8 @@ namespace vre {
 			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			vrePipeline->bind(commandBuffers[i]);
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			vreModel->bind(commandBuffers[i]);
+			vreModel->draw(commandBuffers[i]);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 			if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {

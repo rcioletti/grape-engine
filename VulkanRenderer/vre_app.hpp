@@ -4,6 +4,7 @@
 #include "vre_pipeline.hpp"
 #include "vre_device.hpp"
 #include "vre_swap_chain.hpp"
+#include "vre_model.hpp"
 
 #include <memory>
 #include <vector>
@@ -24,6 +25,7 @@ namespace vre {
 		void run();
 
 	private:
+		void loadModels();
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
@@ -35,5 +37,6 @@ namespace vre {
 		std::unique_ptr<VrePipeline> vrePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
+		std::unique_ptr<VreModel> vreModel;
 	};
 }
