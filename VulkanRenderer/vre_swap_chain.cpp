@@ -13,12 +13,14 @@ namespace vre {
 
     VreSwapChain::VreSwapChain(VreDevice& deviceRef, VkExtent2D extent)
         : device{ deviceRef }, windowExtent{ extent } {
-        createSwapChain();
-        createImageViews();
-        createRenderPass();
-        createDepthResources();
-        createFramebuffers();
-        createSyncObjects();
+        init();
+    }
+
+    VreSwapChain::VreSwapChain(VreDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VreSwapChain> previous) 
+        : device{ deviceRef }, windowExtent{ windowExtent }, oldSwapChain{previous} {
+        init();
+
+        oldSwapChain = nullptr;
     }
 
     VreSwapChain::~VreSwapChain() {
@@ -119,6 +121,16 @@ namespace vre {
         return result;
     }
 
+    void VreSwapChain::init()
+    {
+        createSwapChain();
+        createImageViews();
+        createRenderPass();
+        createDepthResources();
+        createFramebuffers();
+        createSyncObjects();
+    }
+
     void VreSwapChain::createSwapChain() {
         SwapChainSupportDetails swapChainSupport = device.getSwapChainSupport();
 
@@ -163,7 +175,7 @@ namespace vre {
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
 
-        createInfo.oldSwapchain = VK_NULL_HANDLE;
+        createInfo.oldSwapchain = oldSwapChain == nullptr ? VK_NULL_HANDLE : oldSwapChain->swapChain;
 
         if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
             throw std::runtime_error("failed to create swap chain!");

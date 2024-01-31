@@ -29,11 +29,14 @@ namespace vre {
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
+		void freeCommandBuffers();
 		void drawFrame();
+		void recreateSwapChain();
+		void recordCommandBuffer(int imageIndex);
 
 		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
 		VreDevice vreDevice{ vreWindow };
-		VreSwapChain vreSwapChain{ vreDevice, vreWindow.getExtent() };
+		std::unique_ptr<VreSwapChain> vreSwapChain;
 		std::unique_ptr<VrePipeline> vrePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;

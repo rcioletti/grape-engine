@@ -35,7 +35,7 @@ namespace vre {
 
         // Not copyable or movable
         VreDevice(const VreDevice&) = delete;
-        void operator=(const VreDevice&) = delete;
+        VreDevice& operator=(const VreDevice&) = delete;
         VreDevice(VreDevice&&) = delete;
         VreDevice& operator=(VreDevice&&) = delete;
 
