@@ -4,7 +4,7 @@
 #include "vre_pipeline.hpp"
 #include "vre_device.hpp"
 #include "vre_swap_chain.hpp"
-#include "vre_model.hpp"
+#include "vre_game_object.hpp"
 
 #include <memory>
 #include <vector>
@@ -25,7 +25,7 @@ namespace vre {
 		void run();
 
 	private:
-		void loadModels();
+		void loadGameObjects();
 		void createPipelineLayout();
 		void createPipeline();
 		void createCommandBuffers();
@@ -33,6 +33,7 @@ namespace vre {
 		void drawFrame();
 		void recreateSwapChain();
 		void recordCommandBuffer(int imageIndex);
+		void renderGameObjects(VkCommandBuffer commandBuffer);
 
 		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
 		VreDevice vreDevice{ vreWindow };
@@ -40,6 +41,6 @@ namespace vre {
 		std::unique_ptr<VrePipeline> vrePipeline;
 		VkPipelineLayout pipelineLayout;
 		std::vector<VkCommandBuffer> commandBuffers;
-		std::unique_ptr<VreModel> vreModel;
+		std::vector<VreGameObject> gameObjects;
 	};
 }
