@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vre_camera.hpp"
 #include "vre_pipeline.hpp"
 #include "vre_device.hpp"
 #include "vre_game_object.hpp"
@@ -18,7 +19,7 @@ namespace vre {
 		SimpleRenderSystem(const SimpleRenderSystem&) = delete;
 		SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-		void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<VreGameObject> &gameObjects);
+		void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<VreGameObject> &gameObjects, const VreCamera& camera);
 
 	private:
 		void createPipelineLayout();

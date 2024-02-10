@@ -158,6 +158,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="simple_render_system.cpp" />
     <ClCompile Include="vre_app.cpp" />
+    <ClCompile Include="vre_camera.cpp" />
     <ClCompile Include="vre_device.cpp" />
     <ClCompile Include="vre_model.cpp" />
     <ClCompile Include="vre_pipeline.cpp" />
@@ -169,6 +170,7 @@
   <ItemGroup>
     <ClInclude Include="simple_render_system.hpp" />
     <ClInclude Include="vre_app.hpp" />
+    <ClInclude Include="vre_camera.hpp" />
     <ClInclude Include="vre_device.hpp" />
     <ClInclude Include="vre_game_object.hpp" />
     <ClInclude Include="vre_model.hpp" />

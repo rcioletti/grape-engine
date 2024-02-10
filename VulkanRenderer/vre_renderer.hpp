@@ -20,6 +20,7 @@ namespace vre {
 		VreRenderer& operator=(const VreRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return vreSwapChain->getRenderPass(); }
+		float getAspectRatio() const { return vreSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
 		VkCommandBuffer getCurrentCommandBuffer() const {
