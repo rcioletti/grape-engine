@@ -151,9 +151,9 @@ namespace vre {
 		}
 		else {
 			std::shared_ptr<VreSwapChain> oldSwapChain = std::move(vreSwapChain);
-			vreSwapChain = std::make_unique<VreSwapChain>(vreDevice, extent, std::move(vreSwapChain));
+			vreSwapChain = std::make_unique<VreSwapChain>(vreDevice, extent, oldSwapChain);
 
-			if (oldSwapChain->compareSwapFormats(*vreSwapChain.get())) {
+			if (!oldSwapChain->compareSwapFormats(*vreSwapChain.get())) {
 				throw std::runtime_error("Swap chain image(or depthh) format has changed!");
 			}
 		}
