@@ -1,10 +1,9 @@
 #pragma once
 
 #include "vre_window.hpp"
-#include "vre_pipeline.hpp"
 #include "vre_device.hpp"
-#include "vre_swap_chain.hpp"
 #include "vre_game_object.hpp"
+#include "vre_renderer.hpp"
 
 #include <memory>
 #include <vector>
@@ -26,21 +25,11 @@ namespace vre {
 
 	private:
 		void loadGameObjects();
-		void createPipelineLayout();
-		void createPipeline();
-		void createCommandBuffers();
-		void freeCommandBuffers();
-		void drawFrame();
-		void recreateSwapChain();
-		void recordCommandBuffer(int imageIndex);
-		void renderGameObjects(VkCommandBuffer commandBuffer);
 
 		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
 		VreDevice vreDevice{ vreWindow };
-		std::unique_ptr<VreSwapChain> vreSwapChain;
-		std::unique_ptr<VrePipeline> vrePipeline;
-		VkPipelineLayout pipelineLayout;
-		std::vector<VkCommandBuffer> commandBuffers;
+		VreRenderer vreRenderer{ vreWindow, vreDevice };
+
 		std::vector<VreGameObject> gameObjects;
 	};
 }

@@ -156,20 +156,24 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="simple_render_system.cpp" />
     <ClCompile Include="vre_app.cpp" />
     <ClCompile Include="vre_device.cpp" />
     <ClCompile Include="vre_model.cpp" />
     <ClCompile Include="vre_pipeline.cpp" />
+    <ClCompile Include="vre_renderer.cpp" />
     <ClCompile Include="vre_swap_chain.cpp" />
     <ClCompile Include="vre_window.cpp" />
     <ClCompile Include="vre_window.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="simple_render_system.hpp" />
     <ClInclude Include="vre_app.hpp" />
     <ClInclude Include="vre_device.hpp" />
     <ClInclude Include="vre_game_object.hpp" />
     <ClInclude Include="vre_model.hpp" />
     <ClInclude Include="vre_pipeline.hpp" />
+    <ClInclude Include="vre_renderer.hpp" />
     <ClInclude Include="vre_swap_chain.hpp" />
   </ItemGroup>
   <ItemGroup>
