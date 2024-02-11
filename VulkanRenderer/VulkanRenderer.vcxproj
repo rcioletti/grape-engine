@@ -155,6 +155,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="keyboard_movement_controller.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="simple_render_system.cpp" />
     <ClCompile Include="vre_app.cpp" />
@@ -168,6 +169,7 @@
     <ClCompile Include="vre_window.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="keyboard_movement_controller.hpp" />
     <ClInclude Include="simple_render_system.hpp" />
     <ClInclude Include="vre_app.hpp" />
     <ClInclude Include="vre_camera.hpp" />
