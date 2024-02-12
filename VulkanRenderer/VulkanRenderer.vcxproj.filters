@@ -57,6 +57,9 @@
     <ClCompile Include="vre_utils.hpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="vre_game_object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vre_pipeline.hpp">

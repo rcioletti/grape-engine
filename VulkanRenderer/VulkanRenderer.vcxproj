@@ -161,6 +161,7 @@
     <ClCompile Include="vre_app.cpp" />
     <ClCompile Include="vre_camera.cpp" />
     <ClCompile Include="vre_device.cpp" />
+    <ClCompile Include="vre_game_object.cpp" />
     <ClCompile Include="vre_model.cpp" />
     <ClCompile Include="vre_pipeline.cpp" />
     <ClCompile Include="vre_renderer.cpp" />
