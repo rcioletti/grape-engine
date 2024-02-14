@@ -3,6 +3,7 @@
 #include "vre_camera.hpp"
 #include "simple_render_system.hpp"
 #include "keyboard_movement_controller.hpp"
+#include "vre_buffer.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -16,6 +17,11 @@
 
 namespace vre {
 
+	struct GlobalUbo {
+		glm::mat4 projectionView{ 1.f };
+		glm::vec3 lightDirection = glm::normalize(glm::vec3{1.f, -3.f, -1.f});
+	};
+
 	VreApp::VreApp()
 	{
 		loadGameObjects();
@@ -28,6 +34,17 @@ namespace vre {
 
 	void VreApp::run()
 	{
+		VreBuffer globalUboBuffer{
+			vreDevice,
+			sizeof(GlobalUbo),
+			VreSwapChain::MAX_FRAMES_IN_FLIGHT,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			vreDevice.properties.limits.minUniformBufferOffsetAlignment,
+		};
+
+		globalUboBuffer.map();
+
 		SimpleRenderSystem simpleRenderSystem{ vreDevice, vreRenderer.getSwapChainRenderPass() };
         VreCamera camera{};
         camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
@@ -54,8 +71,23 @@ namespace vre {
 			
 			if (auto commandBuffer = vreRenderer.beginFrame()) {
 				
+				int frameIndex = vreRenderer.getFrameIndex();
+				FrameInfo frameInfo{
+					frameIndex,
+					frameTime,
+					commandBuffer,
+					camera
+				};
+
+				// update
+				GlobalUbo ubo{};
+				ubo.projectionView = camera.getProjection() * camera.getView();
+				globalUboBuffer.writeToIndex(&ubo, frameIndex);
+				globalUboBuffer.flushIndex(frameIndex);
+
+				// render
 				vreRenderer.beginSwapChainRenderPass(commandBuffer);
-				simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera);
+				simpleRenderSystem.renderGameObjects(frameInfo, gameObjects, camera);
 				vreRenderer.endSwapChainRenderPass(commandBuffer);
 				vreRenderer.endFrame();
 			}

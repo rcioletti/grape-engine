@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vre_device.hpp"
+#include "vre_buffer.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -53,13 +54,11 @@ namespace vre {
 
 		VreDevice& vreDevice;
 
-		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexBufferMemory;
+		std::unique_ptr<VreBuffer> vertexBuffer;
 		uint32_t vertexCount;
 
 		bool hasIndexBuffer = false;
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexBufferMemory;
+		std::unique_ptr<VreBuffer> indexBuffer;
 		uint32_t indexCount;
 	};
 }

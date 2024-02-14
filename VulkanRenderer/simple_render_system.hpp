@@ -4,6 +4,7 @@
 #include "vre_pipeline.hpp"
 #include "vre_device.hpp"
 #include "vre_game_object.hpp"
+#include "vre_frame_info.hpp"
 
 #include <memory>
 #include <vector>
@@ -19,7 +20,7 @@ namespace vre {
 		SimpleRenderSystem(const SimpleRenderSystem&) = delete;
 		SimpleRenderSystem& operator=(const SimpleRenderSystem&) = delete;
 
-		void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<VreGameObject> &gameObjects, const VreCamera& camera);
+		void renderGameObjects(FrameInfo &frameInfo, std::vector<VreGameObject> &gameObjects, const VreCamera& camera);
 
 	private:
 		void createPipelineLayout();
