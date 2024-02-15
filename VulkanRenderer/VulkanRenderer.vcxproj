@@ -76,7 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -97,7 +97,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClCompile Include="keyboard_movement_controller.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="map_manager.cpp" />
     <ClCompile Include="simple_render_system.cpp" />
     <ClCompile Include="vre_app.cpp" />
     <ClCompile Include="vre_buffer.cpp" />
@@ -174,6 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="keyboard_movement_controller.hpp" />
+    <ClInclude Include="map_manager.hpp" />
     <ClInclude Include="simple_render_system.hpp" />
     <ClInclude Include="vre_app.hpp" />
     <ClInclude Include="vre_buffer.hpp" />

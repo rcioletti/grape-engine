@@ -4,6 +4,7 @@
 #include "simple_render_system.hpp"
 #include "keyboard_movement_controller.hpp"
 #include "vre_buffer.hpp"
+#include "map_manager.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -100,12 +101,26 @@ namespace vre {
 
 	void VreApp::loadGameObjects()
 	{
-		std::shared_ptr<VreModel> vreModel = VreModel::createModelFromFile(vreDevice, "models/smooth_vase.obj");
+		std::shared_ptr<VreModel> modelVase = VreModel::createModelFromFile(vreDevice, "models/smooth_vase.obj");
+		std::shared_ptr<VreModel> modelChair = VreModel::createModelFromFile(vreDevice, "models/chair.obj");
 
+		//vase
         auto gameObj = VreGameObject::createGameObject();
-		gameObj.model = vreModel;
+		gameObj.model = modelVase;
 		gameObj.transform.translation = { .0f, .5f, 2.5f };
 		gameObj.transform.scale = glm::vec3(3.f);
         gameObjects.push_back(std::move(gameObj));
+
+		//chair
+		auto gameObjChair = VreGameObject::createGameObject();
+		gameObjChair.model = modelChair;
+		gameObjChair.transform.translation = { -.5f, .5f, 2.5f };
+		gameObjChair.transform.rotation = { 0.f, 2.5f, 3.15f };
+		gameObjChair.transform.scale = glm::vec3(1.f);
+		gameObjects.push_back(std::move(gameObjChair));
+
+		//TODO: load game objects from map on disk
+		MapManager mapManager("Main Map", "mainMap.json");
+		mapManager.loadMap("mainMap.json");
 	}
 }

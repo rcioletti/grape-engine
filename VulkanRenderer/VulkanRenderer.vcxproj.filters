@@ -66,6 +66,9 @@
     <ClCompile Include="vre_frame_info.hpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="map_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vre_pipeline.hpp">
@@ -99,6 +102,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vre_buffer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="map_manager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
