@@ -4,6 +4,7 @@
 #include "vre_device.hpp"
 #include "vre_game_object.hpp"
 #include "vre_renderer.hpp"
+#include "vre_descriptors.hpp"
 
 #include <memory>
 #include <vector>
@@ -30,6 +31,7 @@ namespace vre {
 		VreDevice vreDevice{ vreWindow };
 		VreRenderer vreRenderer{ vreWindow, vreDevice };
 
+		std::unique_ptr<VreDescriptorPool> globalPool{};
 		std::vector<VreGameObject> gameObjects;
 	};
 }

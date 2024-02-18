@@ -12,5 +12,6 @@ namespace vre {
 		float frameTime;
 		VkCommandBuffer commandBuffer;
 		VreCamera& camera;
+		VkDescriptorSet globalDescriptorSet;
 	};
 }
