@@ -55,7 +55,7 @@ namespace vre {
 		}
 
 		auto globalSetLayout = VreDescriptorSetLayout::Builder(vreDevice)
-			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 			.build();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(VreSwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -99,7 +99,8 @@ namespace vre {
 					frameTime,
 					commandBuffer,
 					camera,
-					globalDescriptorSets[frameIndex]
+					globalDescriptorSets[frameIndex],
+					gameObjects
 				};
 
 				// update
@@ -110,7 +111,7 @@ namespace vre {
 
 				// render
 				vreRenderer.beginSwapChainRenderPass(commandBuffer);
-				simpleRenderSystem.renderGameObjects(frameInfo, gameObjects, camera);
+				simpleRenderSystem.renderGameObjects(frameInfo);
 				vreRenderer.endSwapChainRenderPass(commandBuffer);
 				vreRenderer.endFrame();
 			}
@@ -128,7 +129,7 @@ namespace vre {
 		smoothVase.model = vreModel;
 		smoothVase.transform.translation = { .0f, .5f, 0.f };
 		smoothVase.transform.scale = glm::vec3(3.f);
-        gameObjects.push_back(std::move(smoothVase));
+        gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
 		//chair
 		vreModel = VreModel::createModelFromFile(vreDevice, "models/chair.obj");
@@ -137,7 +138,7 @@ namespace vre {
 		chair.transform.translation = { -.5f, .5f, 0.f };
 		chair.transform.rotation = { 0.f, 2.5f, 3.15f };
 		chair.transform.scale = glm::vec3(1.f);
-		gameObjects.push_back(std::move(chair));
+		gameObjects.emplace(chair.getId(), std::move(chair));
 
 		//floor
 		vreModel = VreModel::createModelFromFile(vreDevice, "models/quad.obj");
@@ -145,7 +146,7 @@ namespace vre {
 		floor.model = vreModel;
 		floor.transform.translation = { 0.f, .5f, 0.f };
 		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-		gameObjects.push_back(std::move(floor));
+		gameObjects.emplace(floor.getId(), std::move(floor));
 
 		//TODO: load game objects from map on disk
 		MapManager mapManager("Main Map", "mainMap.json");

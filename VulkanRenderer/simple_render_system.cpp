@@ -59,7 +59,7 @@ namespace vre {
 		vrePipeline = std::make_unique<VrePipeline>(vreDevice, "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv", pipelineConfig);
 	}
 
-	void SimpleRenderSystem::renderGameObjects(FrameInfo &frameInfo, std::vector<VreGameObject> &gameObjects, const VreCamera& camera)
+	void SimpleRenderSystem::renderGameObjects(FrameInfo &frameInfo)
 	{
 		vrePipeline->bind(frameInfo.commandBuffer);
 
@@ -72,7 +72,8 @@ namespace vre {
 			0, nullptr
 		);
 
-		for (auto& obj : gameObjects) {
+		for (auto& kv : frameInfo.gameObjects) {
+			auto& obj = kv.second;
 			
 			SimplePushConstantData push{};
 			push.modelMatrix = obj.transform.mat4();
