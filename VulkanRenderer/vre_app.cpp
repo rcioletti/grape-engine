@@ -19,8 +19,10 @@
 namespace vre {
 
 	struct GlobalUbo {
-		alignas(16) glm::mat4 projectionView{ 1.f };
-		alignas(16) glm::vec3 lightDirection = glm::normalize(glm::vec3{1.f, -3.f, -1.f});
+		glm::mat4 projectionView{ 1.f };
+		glm::vec4 ambientLightColor{ 1.f, 1.f, 1.f, .02f };
+		glm::vec3 lightPosition{ -1.f };
+		alignas(16) glm::vec4 lightColor{ 1.f };
 	};
 
 	VreApp::VreApp()
@@ -69,6 +71,7 @@ namespace vre {
         camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
         auto viewerObject = VreGameObject::createGameObject();
+		viewerObject.transform.translation.z = -2.5f;
         KeyboardMovementController cameraController{};
 
         auto currentTime = std::chrono::high_resolution_clock::now();
@@ -86,7 +89,7 @@ namespace vre {
 
             float aspect = vreRenderer.getAspectRatio();
             //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
-            camera.setPerspectiveProjection(glm::radians(50.f), aspect, .1f, 10.f);
+            camera.setPerspectiveProjection(glm::radians(50.f), aspect, .1f, 100.f);
 			
 			if (auto commandBuffer = vreRenderer.beginFrame()) {
 				
@@ -118,23 +121,31 @@ namespace vre {
 
 	void VreApp::loadGameObjects()
 	{
-		std::shared_ptr<VreModel> modelVase = VreModel::createModelFromFile(vreDevice, "models/smooth_vase.obj");
-		std::shared_ptr<VreModel> modelChair = VreModel::createModelFromFile(vreDevice, "models/chair.obj");
+		std::shared_ptr<VreModel> vreModel = VreModel::createModelFromFile(vreDevice, "models/smooth_vase.obj");
 
 		//vase
-        auto gameObj = VreGameObject::createGameObject();
-		gameObj.model = modelVase;
-		gameObj.transform.translation = { .0f, .5f, 2.5f };
-		gameObj.transform.scale = glm::vec3(3.f);
-        gameObjects.push_back(std::move(gameObj));
+        auto smoothVase = VreGameObject::createGameObject();
+		smoothVase.model = vreModel;
+		smoothVase.transform.translation = { .0f, .5f, 0.f };
+		smoothVase.transform.scale = glm::vec3(3.f);
+        gameObjects.push_back(std::move(smoothVase));
 
 		//chair
-		auto gameObjChair = VreGameObject::createGameObject();
-		gameObjChair.model = modelChair;
-		gameObjChair.transform.translation = { -.5f, .5f, 2.5f };
-		gameObjChair.transform.rotation = { 0.f, 2.5f, 3.15f };
-		gameObjChair.transform.scale = glm::vec3(1.f);
-		gameObjects.push_back(std::move(gameObjChair));
+		vreModel = VreModel::createModelFromFile(vreDevice, "models/chair.obj");
+		auto chair = VreGameObject::createGameObject();
+		chair.model = vreModel;
+		chair.transform.translation = { -.5f, .5f, 0.f };
+		chair.transform.rotation = { 0.f, 2.5f, 3.15f };
+		chair.transform.scale = glm::vec3(1.f);
+		gameObjects.push_back(std::move(chair));
+
+		//floor
+		vreModel = VreModel::createModelFromFile(vreDevice, "models/quad.obj");
+		auto floor = VreGameObject::createGameObject();
+		floor.model = vreModel;
+		floor.transform.translation = { 0.f, .5f, 0.f };
+		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+		gameObjects.push_back(std::move(floor));
 
 		//TODO: load game objects from map on disk
 		MapManager mapManager("Main Map", "mainMap.json");
