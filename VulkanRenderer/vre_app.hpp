@@ -27,7 +27,7 @@ namespace vre {
 	private:
 		void loadGameObjects();
 
-		VreWindow vreWindow{ WIDTH, HEIGHT, "Vulkan 3D Renderer" };
+		VreWindow vreWindow{ WIDTH, HEIGHT, "3D Game Engine" };
 		VreDevice vreDevice{ vreWindow };
 		VreRenderer vreRenderer{ vreWindow, vreDevice };
 

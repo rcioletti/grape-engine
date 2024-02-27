@@ -76,7 +76,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\stb_image;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -97,7 +97,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\stb_image;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\stb_image;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\projects\engine\vulkan-renderer\VulkanRenderer\vendor\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Rod\Documents\Visual Studio 2022\Libraries\stb_image;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -170,6 +170,7 @@
     <ClCompile Include="vre_pipeline.cpp" />
     <ClCompile Include="vre_renderer.cpp" />
     <ClCompile Include="vre_swap_chain.cpp" />
+    <ClCompile Include="vre_texture.cpp" />
     <ClCompile Include="vre_utils.hpp" />
     <ClCompile Include="vre_window.cpp" />
     <ClCompile Include="vre_window.hpp" />
@@ -188,6 +189,7 @@
     <ClInclude Include="vre_pipeline.hpp" />
     <ClInclude Include="vre_renderer.hpp" />
     <ClInclude Include="vre_swap_chain.hpp" />
+    <ClInclude Include="vre_texture.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\simple_shader.frag" />
