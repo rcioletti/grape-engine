@@ -4,6 +4,7 @@
 #include "simple_render_system.hpp"
 #include "keyboard_movement_controller.hpp"
 #include "vre_buffer.hpp"
+#include "vre_texture.hpp"
 #include "map_manager.hpp"
 
 #define GLM_FORCE_RADIANS
@@ -30,7 +31,9 @@ namespace vre {
 		globalPool = VreDescriptorPool::Builder(vreDevice)
 			.setMaxSets(VreSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VreSwapChain::MAX_FRAMES_IN_FLIGHT)
+			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VreSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.build();
+
 		loadGameObjects();
 	}
 
@@ -56,13 +59,26 @@ namespace vre {
 
 		auto globalSetLayout = VreDescriptorSetLayout::Builder(vreDevice)
 			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.build();
+
+		VreTexture texture = VreTexture(vreDevice);
+		texture.createTextureImage();
+		texture.createTextureImageView();
+		texture.createTextureSampler();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(VreSwapChain::MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < globalDescriptorSets.size(); i++) {
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
+
+			VkDescriptorImageInfo imageInfo{};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = texture.getTextureImageView();
+			imageInfo.sampler = texture.getTextureSampler();
+
 			VreDescriptorWriter(*globalSetLayout, *globalPool)
 				.writeBuffer(0, &bufferInfo)
+				.writeImage(1, &imageInfo)
 				.build(globalDescriptorSets[i]);
 		}
 
@@ -135,7 +151,7 @@ namespace vre {
 		vreModel = VreModel::createModelFromFile(vreDevice, "models/chair.obj");
 		auto chair = VreGameObject::createGameObject();
 		chair.model = vreModel;
-		chair.transform.translation = { -.5f, .5f, 0.f };
+		chair.transform.translation = { -.5f, .67f, 0.f };
 		chair.transform.rotation = { 0.f, 2.5f, 3.15f };
 		chair.transform.scale = glm::vec3(1.f);
 		gameObjects.emplace(chair.getId(), std::move(chair));
@@ -149,7 +165,7 @@ namespace vre {
 		gameObjects.emplace(floor.getId(), std::move(floor));
 
 		//TODO: load game objects from map on disk
-		MapManager mapManager("Main Map", "mainMap.json");
-		mapManager.loadMap("mainMap.json");
+		//MapManager mapManager("Main Map", "mainMap.json");
+		//mapManager.loadMap("mainMap.json");
 	}
 }

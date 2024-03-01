@@ -1,5 +1,4 @@
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#pragma once
 
 #include "vre_buffer.hpp"
 
@@ -23,14 +22,23 @@ namespace vre {
 			VkImage& image,
 			VkDeviceMemory& imageMemory);
 
-		VkCommandBuffer beginSingleTimeCommands();
-
-		void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
 		void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+		void createTextureImageView();
+
+		VkImageView createImageView(VkImage image, VkFormat format);
+
+		void createTextureSampler();
+
+		VkImageView getTextureImageView() { return textureImageView; }
+		VkSampler getTextureSampler() { return textureSampler; }
 
 	private:
 
+		VkImage textureImage;
+		VkDeviceMemory textureImageMemory;
+		VkImageView textureImageView;
+		VkSampler textureSampler;
 		VreDevice& vreDevice;
 	};
 }

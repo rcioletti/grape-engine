@@ -32,6 +32,7 @@ namespace vre {
 		VreRenderer vreRenderer{ vreWindow, vreDevice };
 
 		std::unique_ptr<VreDescriptorPool> globalPool{};
+		std::unique_ptr<VreDescriptorPool> imagePool{};
 		VreGameObject::Map gameObjects;
 	};
 }

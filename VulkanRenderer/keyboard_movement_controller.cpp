@@ -30,6 +30,7 @@ namespace vre {
 		if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
 		if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
 
+
 		if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
 			gameObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
 		}

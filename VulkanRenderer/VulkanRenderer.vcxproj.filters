@@ -121,9 +121,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="simple_shader.vert">
-      <Filter>Source Files\shaders</Filter>
-    </None>
     <None Include="shaders\simple_shader.frag">
       <Filter>Source Files\shaders</Filter>
     </None>
@@ -131,6 +128,9 @@
       <Filter>Source Files\shaders</Filter>
     </None>
     <None Include="shaders\simple_shader.vert.spv">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\simple_shader.vert">
       <Filter>Source Files\shaders</Filter>
     </None>
   </ItemGroup>

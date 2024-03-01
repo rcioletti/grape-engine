@@ -1,5 +1,7 @@
 #include "vre_texture.hpp"
-#include "vre_device.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include <stdexcept>
 
@@ -40,9 +42,6 @@ namespace vre {
 
 		stbi_image_free(pixels);
 
-		VkImage textureImage;
-		VkDeviceMemory textureImageMemory;
-
 		createImage(
 			texWidth, 
 			texHeight, 
@@ -57,11 +56,10 @@ namespace vre {
 		vreDevice.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
 		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
 		vkDestroyBuffer(vreDevice.device(), stagingBuffer, nullptr);
 		vkFreeMemory(vreDevice.device(), stagingBufferMemory, nullptr);
 	}
+
 	void VreTexture::createImage(
 		uint32_t width, 
 		uint32_t height, 
@@ -111,8 +109,6 @@ namespace vre {
 	{
 		VkCommandBuffer commandBuffer = vreDevice.beginSingleTimeCommands();
 
-		vreDevice.endSingleTimeCommands(commandBuffer);
-
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.oldLayout = oldLayout;
@@ -125,17 +121,6 @@ namespace vre {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-		barrier.srcAccessMask = 0; // TODO
-		barrier.dstAccessMask = 0; // TODO
-
-		vkCmdPipelineBarrier(
-			commandBuffer,
-			0 /* TODO */, 0 /* TODO */,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
 
 		VkPipelineStageFlags sourceStage;
 		VkPipelineStageFlags destinationStage;
@@ -166,5 +151,58 @@ namespace vre {
 			0, nullptr,
 			1, &barrier
 		);
+
+		vreDevice.endSingleTimeCommands(commandBuffer);
+	}
+
+	void VreTexture::createTextureImageView()
+	{
+		textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	}
+
+	VkImageView VreTexture::createImageView(VkImage image, VkFormat format)
+	{
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = textureImage;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		VkImageView imageView;
+		if (vkCreateImageView(vreDevice.device(), &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create texture image view!");
+		}
+
+		return imageView;
+	}
+
+	void VreTexture::createTextureSampler()
+	{
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = vreDevice.properties.limits.maxSamplerAnisotropy;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+
+		if (vkCreateSampler(vreDevice.device(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create texture sampler!");
+		}
 	}
 }
