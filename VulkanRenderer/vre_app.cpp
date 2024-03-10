@@ -31,7 +31,6 @@ namespace vre {
 		globalPool = VreDescriptorPool::Builder(vreDevice)
 			.setMaxSets(VreSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VreSwapChain::MAX_FRAMES_IN_FLIGHT)
-			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VreSwapChain::MAX_FRAMES_IN_FLIGHT)
 			.build();
 
 		loadGameObjects();
@@ -59,26 +58,25 @@ namespace vre {
 
 		auto globalSetLayout = VreDescriptorSetLayout::Builder(vreDevice)
 			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3)
 			.build();
-
-		VreTexture texture = VreTexture(vreDevice);
-		texture.createTextureImage();
-		texture.createTextureImageView();
-		texture.createTextureSampler();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(VreSwapChain::MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < globalDescriptorSets.size(); i++) {
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
 
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = texture.getTextureImageView();
-			imageInfo.sampler = texture.getTextureSampler();
+			VkDescriptorImageInfo descriptorInfo[3];
+
+			for (uint32_t i = 0; i < textures.size(); i++) {
+
+				descriptorInfo[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				descriptorInfo[i].sampler = textures[i].getTextureSampler();
+				descriptorInfo[i].imageView = textures[i].getTextureImageView();
+			}
 
 			VreDescriptorWriter(*globalSetLayout, *globalPool)
 				.writeBuffer(0, &bufferInfo)
-				.writeImage(1, &imageInfo)
+				.writeImages(1, descriptorInfo)
 				.build(globalDescriptorSets[i]);
 		}
 
@@ -145,6 +143,9 @@ namespace vre {
 		smoothVase.model = vreModel;
 		smoothVase.transform.translation = { .0f, .5f, 0.f };
 		smoothVase.transform.scale = glm::vec3(3.f);
+		VreTexture smoothVaseTexture = VreTexture(vreDevice, "textures/ceramic.jpg");
+		textures.push_back(smoothVaseTexture);
+		smoothVase.transform.imgIndex = textures.size() - 1;
         gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
 		//chair
@@ -154,6 +155,9 @@ namespace vre {
 		chair.transform.translation = { -.5f, .67f, 0.f };
 		chair.transform.rotation = { 0.f, 2.5f, 3.15f };
 		chair.transform.scale = glm::vec3(1.f);
+		VreTexture chairTexture = VreTexture(vreDevice, "textures/leather.jpg");
+		textures.push_back(chairTexture);
+		chair.transform.imgIndex = textures.size() - 1;
 		gameObjects.emplace(chair.getId(), std::move(chair));
 
 		//floor
@@ -162,6 +166,9 @@ namespace vre {
 		floor.model = vreModel;
 		floor.transform.translation = { 0.f, .5f, 0.f };
 		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+		VreTexture floorTexture = VreTexture(vreDevice, "textures/concrete.png");
+		textures.push_back(floorTexture);
+		floor.transform.imgIndex = textures.size() - 1;
 		gameObjects.emplace(floor.getId(), std::move(floor));
 
 		//TODO: load game objects from map on disk

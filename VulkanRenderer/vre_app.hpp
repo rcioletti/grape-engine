@@ -27,12 +27,14 @@ namespace vre {
 	private:
 		void loadGameObjects();
 
-		VreWindow vreWindow{ WIDTH, HEIGHT, "3D Game Engine" };
+		VreWindow vreWindow{ WIDTH, HEIGHT, "Grape Engine" };
 		VreDevice vreDevice{ vreWindow };
 		VreRenderer vreRenderer{ vreWindow, vreDevice };
 
 		std::unique_ptr<VreDescriptorPool> globalPool{};
 		std::unique_ptr<VreDescriptorPool> imagePool{};
 		VreGameObject::Map gameObjects;
+
+		std::vector<VreTexture> textures;
 	};
 }

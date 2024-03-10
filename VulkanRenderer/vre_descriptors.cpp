@@ -176,6 +176,22 @@ namespace vre {
         return *this;
     }
 
+    VreDescriptorWriter& VreDescriptorWriter::writeImages(
+        uint32_t binding, VkDescriptorImageInfo imageInfo[3]) {
+
+        auto& bindingDescription = setLayout.bindings[binding];
+
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.descriptorType = bindingDescription.descriptorType;
+        write.dstBinding = binding;
+        write.pImageInfo = imageInfo;
+        write.descriptorCount = 3;
+
+        writes.push_back(write);
+        return *this;
+    }
+
     bool VreDescriptorWriter::build(VkDescriptorSet& set) {
         bool success = pool.allocateDescriptor(setLayout.getDescriptorSetLayout(), set);
         if (!success) {

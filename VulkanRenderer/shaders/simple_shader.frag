@@ -15,11 +15,12 @@ layout(set = 0, binding = 0) uniform GlobalUbo{
 	vec4 lightColor;
 } ubo;
 
-layout(binding = 1) uniform sampler2D texSampler;
+layout(set = 0, binding = 1) uniform sampler2D textures[8];
 
 layout(push_constant) uniform Push{
 	mat4 modelMatrix;
 	mat4 normalMatrix;
+	int imgIndex;
 } push;
 
 void main(){
@@ -30,5 +31,5 @@ void main(){
 	vec3 ambientLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
 	vec3 diffuseLight = lightColor * max(dot(normalize(fragNormalWorld), normalize(directionToLight)), 0);
 
-    outColor = vec4((diffuseLight + ambientLight) * (fragColor * texture(texSampler, fragTexCoord).rgb), 1.0);
+    outColor = vec4((diffuseLight + ambientLight) * (fragColor * texture(textures[push.imgIndex], fragTexCoord).rgb), 1.0);
 }

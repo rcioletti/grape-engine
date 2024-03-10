@@ -14,6 +14,7 @@ namespace vre {
 	struct SimplePushConstantData {
 		glm::mat4 modelMatrix{ 1.f };
 		glm::mat4 normalMatrix{ 1.f };
+		int imgIndex{ 0 };
 	};
 
 	SimpleRenderSystem::SimpleRenderSystem(VreDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : vreDevice{device}
@@ -78,6 +79,7 @@ namespace vre {
 			SimplePushConstantData push{};
 			push.modelMatrix = obj.transform.mat4();
 			push.normalMatrix = obj.transform.normalMatrix();
+			push.imgIndex = obj.transform.imgIndex;
 
 			vkCmdPushConstants(
 				frameInfo.commandBuffer,

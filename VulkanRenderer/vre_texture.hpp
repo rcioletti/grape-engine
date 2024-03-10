@@ -7,10 +7,10 @@ namespace vre {
 	class VreTexture {
 
 	public:
-		VreTexture(VreDevice& device);
+		VreTexture(VreDevice& device, std::string texturePath);
 		~VreTexture();
 
-		void createTextureImage();
+		void createTextureImage(std::string texturePath);
 
 		void createImage(
 			uint32_t width,
@@ -40,5 +40,6 @@ namespace vre {
 		VkImageView textureImageView;
 		VkSampler textureSampler;
 		VreDevice& vreDevice;
+		VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
 	};
 }

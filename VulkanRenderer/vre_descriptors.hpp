@@ -90,6 +90,7 @@ namespace vre {
 
         VreDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
         VreDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+        VreDescriptorWriter& writeImages(uint32_t binding, VkDescriptorImageInfo imageInfo[3]);
 
         bool build(VkDescriptorSet& set);
         void overwrite(VkDescriptorSet& set);

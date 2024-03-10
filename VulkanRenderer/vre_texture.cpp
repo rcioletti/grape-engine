@@ -1,4 +1,6 @@
 #include "vre_texture.hpp"
+#include "vre_descriptors.hpp"
+#include "vre_swap_chain.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -7,18 +9,21 @@
 
 namespace vre {
 
-	VreTexture::VreTexture(VreDevice& device) : vreDevice{device} 
+	VreTexture::VreTexture(VreDevice& device, std::string texturePath) : vreDevice{device}
 	{
+		createTextureImage(texturePath);
+		createTextureImageView();
+		createTextureSampler();
 	}
 
 	VreTexture::~VreTexture()
 	{
 	}
 
-	void VreTexture::createTextureImage()
+	void VreTexture::createTextureImage(std::string texturePath)
 	{
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 		if (!pixels) {
@@ -164,9 +169,9 @@ namespace vre {
 	{
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = textureImage;
+		viewInfo.image = image;
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+		viewInfo.format = format;
 		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
