@@ -429,4 +429,6 @@ FodyWeavers.xsd
 *.exe
 *.out
 *.app
-/VulkanRenderer/vendor/rapidjson
+
+/build
+.vscode
