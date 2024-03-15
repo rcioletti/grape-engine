@@ -26,12 +26,12 @@ namespace grape {
 			glfwGetWindowSize(window, &width, &height);
 
 			if (lastXpos != xpos) {
-				rotate.y -= (initialXpos - xpos);
+				rotate.y -= static_cast<uint32_t>(initialXpos - xpos);
 				lastXpos = xpos;
 			}
 
 			if (lastYpos != ypos) {
-				rotate.x += (initialYpos - ypos);
+				rotate.x += static_cast<uint32_t>(initialYpos - ypos);
 				lastYpos = ypos;
 			}
 		}

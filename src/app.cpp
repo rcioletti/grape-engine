@@ -1,7 +1,8 @@
 #include "app.hpp"
 
 #include "camera.hpp"
-#include "simple_render_system.hpp"
+#include "systems/simple_render_system.hpp"
+#include "systems/point_light_system.hpp"
 #include "keyboard_movement_controller.hpp"
 #include "buffer.hpp"
 #include "texture.hpp"
@@ -20,7 +21,8 @@
 namespace grape {
 
 	struct GlobalUbo {
-		glm::mat4 projectionView{ 1.f };
+		glm::mat4 projection{ 1.f };
+		glm::mat4 view{ 1.f };
 		glm::vec4 ambientLightColor{ 1.f, 1.f, 1.f, .02f };
 		glm::vec3 lightPosition{ -1.f };
 		alignas(16) glm::vec4 lightColor{ 1.f };
@@ -58,7 +60,7 @@ namespace grape {
 
 		auto globalSetLayout = DescriptorSetLayout::Builder(grapeDevice)
 			.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textures.size())
+			.addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, static_cast<uint32_t>(textures.size()))
 			.build();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
@@ -83,6 +85,7 @@ namespace grape {
 		}
 
 		SimpleRenderSystem simpleRenderSystem{ grapeDevice, grapeRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout()};
+		PointLightSystem pointLightSystem{ grapeDevice, grapeRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
         Camera camera{};
         camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
@@ -121,13 +124,15 @@ namespace grape {
 
 				// update
 				GlobalUbo ubo{};
-				ubo.projectionView = camera.getProjection() * camera.getView();
+				ubo.projection = camera.getProjection();
+				ubo.view = camera.getView();
 				uboBuffers[frameIndex]->writeToBuffer(&ubo);
 				uboBuffers[frameIndex]->flush();
 
 				// render
 				grapeRenderer.beginSwapChainRenderPass(commandBuffer);
 				simpleRenderSystem.renderGameObjects(frameInfo);
+				pointLightSystem.render(frameInfo);
 				grapeRenderer.endSwapChainRenderPass(commandBuffer);
 				grapeRenderer.endFrame();
 			}
@@ -147,7 +152,7 @@ namespace grape {
 		smoothVase.transform.scale = glm::vec3(3.f);
 		Texture smoothVaseTexture = Texture(grapeDevice, "textures/ceramic.jpg");
 		textures.push_back(smoothVaseTexture);
-		smoothVase.imgIndex = textures.size() - 1;
+		smoothVase.imgIndex = static_cast<uint32_t>(textures.size() - 1);
         gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
 		//chair
@@ -159,7 +164,7 @@ namespace grape {
 		chair.transform.scale = glm::vec3(.01f);
 		Texture chairTexture = Texture(grapeDevice, "textures/chair.jpg");
 		textures.push_back(chairTexture);
-		chair.imgIndex = textures.size() - 1;
+		chair.imgIndex = static_cast<uint32_t>(textures.size() - 1);
 		gameObjects.emplace(chair.getId(), std::move(chair));
 
 		//floor
@@ -170,7 +175,7 @@ namespace grape {
 		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
 		Texture floorTexture = Texture(grapeDevice, "textures/concrete.png");
 		textures.push_back(floorTexture);
-		floor.imgIndex = textures.size() - 1;
+		floor.imgIndex = static_cast<uint32_t>(textures.size() - 1);
 		gameObjects.emplace(floor.getId(), std::move(floor));
 
 		//TODO: load game objects from map on disk

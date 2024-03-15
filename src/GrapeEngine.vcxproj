@@ -174,8 +174,9 @@
     <ClCompile Include="model.cpp" />
     <ClCompile Include="pipeline.cpp" />
     <ClCompile Include="renderer.cpp" />
-    <ClCompile Include="simple_render_system.cpp" />
     <ClCompile Include="swap_chain.cpp" />
+    <ClCompile Include="systems\point_light_system.cpp" />
+    <ClCompile Include="systems\simple_render_system.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
@@ -192,8 +193,9 @@
     <ClInclude Include="model.hpp" />
     <ClInclude Include="pipeline.hpp" />
     <ClInclude Include="renderer.hpp" />
-    <ClInclude Include="simple_render_system.hpp" />
     <ClInclude Include="swap_chain.hpp" />
+    <ClInclude Include="systems\point_light_system.hpp" />
+    <ClInclude Include="systems\simple_render_system.hpp" />
     <ClInclude Include="texture.hpp" />
     <ClInclude Include="utils.hpp" />
     <ClInclude Include="window.hpp" />

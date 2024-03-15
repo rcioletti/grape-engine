@@ -30,6 +30,8 @@ namespace grape {
 
 		void createTextureSampler();
 
+		void cleanup();
+
 		VkImageView getTextureImageView() { return textureImageView; }
 		VkSampler getTextureSampler() { return textureSampler; }
 

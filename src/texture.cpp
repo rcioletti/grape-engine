@@ -214,4 +214,12 @@ namespace grape {
 			throw std::runtime_error("failed to create texture sampler!");
 		}
 	}
+
+	void Texture::cleanup()
+	{
+		vkDestroyImage(grapeDevice.device(), textureImage, nullptr);
+		vkFreeMemory(grapeDevice.device(), textureImageMemory, nullptr);
+		vkDestroySampler(grapeDevice.device(), textureSampler, nullptr);
+		vkDestroyImageView(grapeDevice.device(), textureImageView, nullptr);
+	}
 }
