@@ -20,14 +20,6 @@
 
 namespace grape {
 
-	struct GlobalUbo {
-		glm::mat4 projection{ 1.f };
-		glm::mat4 view{ 1.f };
-		glm::vec4 ambientLightColor{ 1.f, 1.f, 1.f, .02f };
-		glm::vec3 lightPosition{ -1.f };
-		alignas(16) glm::vec4 lightColor{ 1.f };
-	};
-
 	App::App()
 	{
 		globalPool = DescriptorPool::Builder(grapeDevice)
@@ -126,6 +118,7 @@ namespace grape {
 				GlobalUbo ubo{};
 				ubo.projection = camera.getProjection();
 				ubo.view = camera.getView();
+				pointLightSystem.update(frameInfo, ubo);
 				uboBuffers[frameIndex]->writeToBuffer(&ubo);
 				uboBuffers[frameIndex]->flush();
 
@@ -146,14 +139,14 @@ namespace grape {
 		std::shared_ptr<Model> grapeModel = Model::createModelFromFile(grapeDevice, "models/smooth_vase.obj");
 
 		//vase
-        auto smoothVase = GameObject::createGameObject();
+		auto smoothVase = GameObject::createGameObject();
 		smoothVase.model = grapeModel;
 		smoothVase.transform.translation = { .0f, .5f, 0.f };
 		smoothVase.transform.scale = glm::vec3(3.f);
 		Texture smoothVaseTexture = Texture(grapeDevice, "textures/ceramic.jpg");
 		textures.push_back(smoothVaseTexture);
 		smoothVase.imgIndex = static_cast<uint32_t>(textures.size() - 1);
-        gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
+		gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
 
 		//chair
 		grapeModel = Model::createModelFromFile(grapeDevice, "models/chair.obj");
@@ -177,6 +170,26 @@ namespace grape {
 		textures.push_back(floorTexture);
 		floor.imgIndex = static_cast<uint32_t>(textures.size() - 1);
 		gameObjects.emplace(floor.getId(), std::move(floor));
+
+		std::vector<glm::vec3> lightColors{
+		  {1.f, .1f, .1f},
+		  {.1f, .1f, 1.f},
+		  {.1f, 1.f, .1f},
+		  {1.f, 1.f, .1f},
+		  {.1f, 1.f, 1.f},
+		  {1.f, 1.f, 1.f}  //
+		};
+
+		for (int i = 0; i < lightColors.size(); i++) {
+			auto pointLight = GameObject::makePointLight(0.2f);
+			pointLight.color = lightColors[i];
+			auto rotateLight = glm::rotate(
+				glm::mat4(1.f), 
+				(i * glm::two_pi<float>()) / lightColors.size(), 
+				{ 0.f, -1.f, 0.f });
+			pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+			gameObjects.emplace(pointLight.getId(), std::move(pointLight));
+		}
 
 		//TODO: load game objects from map on disk
 		//MapManager mapManager("Main Map", "mainMap.json");

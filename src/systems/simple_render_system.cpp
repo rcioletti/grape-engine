@@ -75,6 +75,10 @@ namespace grape {
 
 		for (auto& kv : frameInfo.gameObjects) {
 			auto& obj = kv.second;
+
+			if (obj.pointLight != nullptr) {
+				continue;
+			}
 			
 			SimplePushConstantData push{};
 			push.modelMatrix = obj.transform.mat4();
