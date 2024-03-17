@@ -118,6 +118,7 @@ namespace grape {
 				GlobalUbo ubo{};
 				ubo.projection = camera.getProjection();
 				ubo.view = camera.getView();
+				ubo.inverseView = camera.getProjection();
 				pointLightSystem.update(frameInfo, ubo);
 				uboBuffers[frameIndex]->writeToBuffer(&ubo);
 				uboBuffers[frameIndex]->flush();
@@ -166,7 +167,7 @@ namespace grape {
 		floor.model = grapeModel;
 		floor.transform.translation = { 0.f, .5f, 0.f };
 		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
-		Texture floorTexture = Texture(grapeDevice, "textures/concrete.png");
+		Texture floorTexture = Texture(grapeDevice, "textures/wood_floor.jpg");
 		textures.push_back(floorTexture);
 		floor.imgIndex = static_cast<uint32_t>(textures.size() - 1);
 		gameObjects.emplace(floor.getId(), std::move(floor));
