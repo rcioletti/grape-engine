@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "model.hpp"
+#include "physics.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -19,6 +20,7 @@ namespace grape {
 		// https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
 		glm::mat4 mat4();
 		glm::mat3 normalMatrix();
+		PxTransform toPxTransform();
 	};
 
 	struct PointLightComponent {

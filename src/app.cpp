@@ -12,11 +12,13 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <stdexcept>
 #include <array>
 #include <cassert>
 #include <chrono>
+#include <iostream>
 
 namespace grape {
 
@@ -101,6 +103,13 @@ namespace grape {
             float aspect = grapeRenderer.getAspectRatio();
             //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
             camera.setPerspectiveProjection(glm::radians(50.f), aspect, .1f, 100.f);
+
+			physics.StepPhysics(frameTime);
+
+			//gameObjects.at(3).transform.translation = {body->getGlobalPose().p.x, -body->getGlobalPose().p.y, body->getGlobalPose().p.z };
+			//glm::quat q(body->getGlobalPose().q.x, body->getGlobalPose().q.y, body->getGlobalPose().q.z, body->getGlobalPose().q.w);
+			//glm::vec3 euler = glm::eulerAngles(q);
+			//gameObjects.at(3).transform.rotation = { euler.x, -euler.y, euler.z };
 			
 			if (auto commandBuffer = grapeRenderer.beginFrame()) {
 				
@@ -153,10 +162,10 @@ namespace grape {
 		grapeModel = Model::createModelFromFile(grapeDevice, "models/chair.obj");
 		auto chair = GameObject::createGameObject();
 		chair.model = grapeModel;
-		chair.transform.translation = { -1.f, 0.5f, 0.f };
-		chair.transform.rotation = { 0.f, 4.5f, 3.15f };
-		chair.transform.scale = glm::vec3(.01f);
-		Texture chairTexture = Texture(grapeDevice, "textures/chair.jpg");
+		chair.transform.translation = { 0.f, 0.1f, 0.f };
+		chair.transform.rotation = { 0.f, 4.0f, 3.15f };
+		chair.transform.scale = glm::vec3(.001f);
+		Texture chairTexture = Texture(grapeDevice, "textures/chair.png");
 		textures.push_back(chairTexture);
 		chair.imgIndex = static_cast<uint32_t>(textures.size() - 1);
 		gameObjects.emplace(chair.getId(), std::move(chair));
@@ -166,11 +175,24 @@ namespace grape {
 		auto floor = GameObject::createGameObject();
 		floor.model = grapeModel;
 		floor.transform.translation = { 0.f, .5f, 0.f };
-		floor.transform.scale = glm::vec3(3.f, 1.f, 3.f);
+		floor.transform.scale = glm::vec3(6.f, 2.f, 6.f);
 		Texture floorTexture = Texture(grapeDevice, "textures/wood_floor.jpg");
 		textures.push_back(floorTexture);
 		floor.imgIndex = static_cast<uint32_t>(textures.size() - 1);
 		gameObjects.emplace(floor.getId(), std::move(floor));
+
+		grapeModel = Model::createModelFromFile(grapeDevice, "models/cube.obj");
+		auto box = GameObject::createGameObject();
+		box.model = grapeModel;
+		box.transform.translation = { 0.f, -5.f, 0.f };
+		box.transform.scale = glm::vec3(0.5f, 0.5f, 0.5f);
+		gameObjects.emplace(box.getId(), std::move(box));
+
+		//PxShape* shape = physics.CreateBoxShape(0.5f, 0.5f, 0.5f, box.transform.toPxTransform(), physics.GetDefaultMaterial());
+		//body = physics.CreateRigidDynamic(TransformComponent().mat4(), shape);
+
+		//PxShape* shape2 = physics.CreateBoxShape(0.5f, 0.5f, 0.5f, PxTransform(), physics.GetDefaultMaterial());
+		//PxRigidDynamic* body2 = physics.CreateRigidDynamic(TransformComponent().mat4(), shape2);
 
 		std::vector<glm::vec3> lightColors{
 		  {1.f, .1f, .1f},
@@ -182,7 +204,7 @@ namespace grape {
 		};
 
 		for (int i = 0; i < lightColors.size(); i++) {
-			auto pointLight = GameObject::makePointLight(0.2f);
+			auto pointLight = GameObject::makePointLight(1.2f);
 			pointLight.color = lightColors[i];
 			auto rotateLight = glm::rotate(
 				glm::mat4(1.f), 

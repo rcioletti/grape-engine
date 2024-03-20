@@ -1,5 +1,7 @@
 #include "game_object.hpp"
 
+#include <glm/gtc/quaternion.hpp>
+
 namespace grape {
 	glm::mat4 TransformComponent::mat4()
 	{
@@ -31,6 +33,7 @@ namespace grape {
             },
             {translation.x, translation.y, translation.z, 1.0f}};
 	}
+
     glm::mat3 TransformComponent::normalMatrix()
     {
         const float c3 = glm::cos(rotation.z);
@@ -57,6 +60,15 @@ namespace grape {
                 invScale.z * (c1 * c2),
             }
         };
+    }
+
+    PxTransform TransformComponent::toPxTransform()
+    {
+        glm::quat quat = glm::quat(glm::vec3(rotation.x, rotation.y, rotation.z));
+        PxQuat pxQuat = PxQuat(quat.x, quat.y, quat.z, quat.w);
+        PxTransform pxTransform = PxTransform(translation.x, -translation.y, translation.z, pxQuat);
+
+        return pxTransform;
     }
 
     GameObject GameObject::makePointLight(float intensity, float radius, glm::vec3 color)

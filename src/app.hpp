@@ -5,6 +5,7 @@
 #include "game_object.hpp"
 #include "renderer.hpp"
 #include "descriptors.hpp"
+#include "physics.hpp"
 
 #include <memory>
 #include <vector>
@@ -36,5 +37,7 @@ namespace grape {
 		GameObject::Map gameObjects;
 
 		std::vector<Texture> textures;
+		Physics physics;
+		PxRigidDynamic* body;
 	};
 }
