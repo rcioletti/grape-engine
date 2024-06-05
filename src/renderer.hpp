@@ -37,6 +37,8 @@ namespace grape {
 		void endFrame();
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+		VkImageView getSwapChainImageView(int index) {return grapeSwapChain->getImageView(index);}
+		size_t getSwapChainImageCount() { return grapeSwapChain->imageCount(); }
 
 	private:
 		void createCommandBuffers();

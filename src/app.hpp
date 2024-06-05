@@ -28,12 +28,16 @@ namespace grape {
 	private:
 		void loadGameObjects();
 
+		void initImGui();
+
+		void createViewportImages();
+
 		Window grapeWindow{ WIDTH, HEIGHT, "Grape Engine" };
 		Device grapeDevice{ grapeWindow };
 		Renderer grapeRenderer{ grapeWindow, grapeDevice };
 
 		std::unique_ptr<DescriptorPool> globalPool{};
-		std::unique_ptr<DescriptorPool> imagePool{};
+		std::unique_ptr<DescriptorPool> imGuiImagePool{};
 		GameObject::Map gameObjects;
 
 		std::vector<Texture> textures;

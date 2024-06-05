@@ -72,6 +72,9 @@ namespace grape {
 
         VkPhysicalDeviceProperties properties;
 
+        VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
+        VkInstance getInstance() { return instance; }
+
     private:
         void createInstance();
         void setupDebugMessenger();

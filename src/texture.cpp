@@ -13,15 +13,21 @@
 
 namespace grape {
 
-	Texture::Texture(Device& device, std::string texturePath) : grapeDevice{device}
+	Texture::Texture(Device& device) : grapeDevice{device}
 	{
-		createTextureImage(ENGINE_DIR + texturePath);
-		createTextureImageView();
-		createTextureSampler();
+	
 	}
 
 	Texture::~Texture()
 	{
+		
+	}
+
+	void Texture::createTextureFromFile(std::string texturePath)
+	{
+		createTextureImage(ENGINE_DIR + texturePath);
+		createTextureImageView();
+		createTextureSampler();
 	}
 
 	void Texture::createTextureImage(std::string texturePath)
@@ -147,6 +153,13 @@ namespace grape {
 
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
 		else {
 			throw std::invalid_argument("unsupported layout transition!");

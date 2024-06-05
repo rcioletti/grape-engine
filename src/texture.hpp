@@ -7,8 +7,10 @@ namespace grape {
 	class Texture {
 
 	public:
-		Texture(Device& device, std::string texturePath);
+		Texture(Device& device);
 		~Texture();
+
+		void createTextureFromFile(std::string texturePath);
 
 		void createTextureImage(std::string texturePath);
 

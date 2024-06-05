@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <array>
 
 namespace grape {
 
@@ -186,7 +187,7 @@ namespace grape {
         write.descriptorType = bindingDescription.descriptorType;
         write.dstBinding = binding;
         write.pImageInfo = imageInfo;
-        write.descriptorCount = 3;
+        write.descriptorCount = 8;
 
         writes.push_back(write);
         return *this;

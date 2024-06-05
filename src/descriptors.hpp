@@ -77,6 +77,8 @@ namespace grape {
 
         void resetPool();
 
+        VkDescriptorPool getDescriptorPool() const { return descriptorPool; }
+
     private:
         Device& grapeDevice;
         VkDescriptorPool descriptorPool;
