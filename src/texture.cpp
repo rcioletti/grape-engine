@@ -11,6 +11,7 @@
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
 #endif
+#include <iostream>
 
 namespace grape {
 
@@ -21,7 +22,7 @@ namespace grape {
 
 	Texture::~Texture()
 	{
-		
+		cleanup();
 	}
 
 	void Texture::createTextureFromFile(std::string texturePath)
@@ -284,9 +285,21 @@ namespace grape {
 
 	void Texture::cleanup()
 	{
-		vkDestroyImage(grapeDevice.device(), textureImage, nullptr);
-		vkFreeMemory(grapeDevice.device(), textureImageMemory, nullptr);
-		vkDestroySampler(grapeDevice.device(), textureSampler, nullptr);
-		vkDestroyImageView(grapeDevice.device(), textureImageView, nullptr);
+		if (textureImageView != VK_NULL_HANDLE) {
+			vkDestroyImageView(grapeDevice.device(), textureImageView, nullptr);
+			textureImageView = VK_NULL_HANDLE;
+		}
+		if (textureSampler != VK_NULL_HANDLE) {
+			vkDestroySampler(grapeDevice.device(), textureSampler, nullptr);
+			textureSampler = VK_NULL_HANDLE;
+		}
+		if (textureImage != VK_NULL_HANDLE) {
+			vkDestroyImage(grapeDevice.device(), textureImage, nullptr);
+			textureImage = VK_NULL_HANDLE;
+		}
+		if (textureImageMemory != VK_NULL_HANDLE) {
+			vkFreeMemory(grapeDevice.device(), textureImageMemory, nullptr);
+			textureImageMemory = VK_NULL_HANDLE;
+		}
 	}
 }

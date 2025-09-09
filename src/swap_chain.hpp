@@ -39,7 +39,6 @@ namespace grape {
         VkFormat findDepthFormat();
 
         VkResult acquireNextImage(uint32_t* imageIndex, uint32_t frameIndex);
-        VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex, uint32_t frameIndex);
 
         bool compareSwapFormats(const SwapChain& swapChain) const {
             return swapChain.swapChainDepthFormat == swapChainDepthFormat && swapChain.swapChainImageFormat == swapChainImageFormat;
@@ -52,7 +51,6 @@ namespace grape {
         void createDepthResources();
         void createRenderPass();
         void createFramebuffers();
-        void createSyncObjects();
 
         // Helper functions
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -79,13 +77,6 @@ namespace grape {
 
         VkSwapchainKHR swapChain;
         std::shared_ptr<SwapChain> oldSwapChain;
-
-        std::vector<VkSemaphore> imageAvailableSemaphores;
-        std::vector<VkSemaphore> renderFinishedSemaphores;
-        std::vector<VkFence> inFlightFences;
-        std::vector<VkFence> imagesInFlight;
-        uint32_t nextSemaphoreIndex = 0;
-        uint32_t acquiredImageSemaphoreIndex = 0;
     };
 
 }

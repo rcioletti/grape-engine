@@ -48,93 +48,17 @@ namespace grape {
         }
 
         vkDestroyRenderPass(device.device(), renderPass, nullptr);
-
-        // Destroy per-frame semaphores
-        for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
-            if (imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
-                vkDestroySemaphore(device.device(), imageAvailableSemaphores[i], nullptr);
-            }
-        }
-
-        // Destroy per-image render finished semaphores
-        for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
-            if (renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
-                vkDestroySemaphore(device.device(), renderFinishedSemaphores[i], nullptr);
-            }
-        }
-
-        // Destroy per-frame fences
-        for (size_t i = 0; i < inFlightFences.size(); i++) {
-            if (inFlightFences[i] != VK_NULL_HANDLE) {
-                vkDestroyFence(device.device(), inFlightFences[i], nullptr);
-            }
-        }
     }
 
-    VkResult SwapChain::acquireNextImage(uint32_t* imageIndex, uint32_t frameIndex) {
-        // Wait on the fence for this CPU frame to ensure GPU finished work from previous use of this frame
-        vkWaitForFences(device.device(), 1, &inFlightFences[frameIndex], VK_TRUE, UINT64_MAX);
+    VkResult SwapChain::acquireNextImage(uint32_t* imageIndex, uint32_t /*frameIndex*/) {
+        // The Renderer is responsible for waiting on fences and providing the semaphore
+        // This function should be called with the semaphore to signal, but SwapChain does not own it
+        // So this function should not use any semaphore or fence
 
-        // Acquire next image using the per-frame 'imageAvailableSemaphores[frameIndex]'
-        VkResult result = vkAcquireNextImageKHR(
-            device.device(),
-            swapChain,
-            std::numeric_limits<uint64_t>::max(),
-            imageAvailableSemaphores[frameIndex],  // semaphore that will be signaled when image is ready
-            VK_NULL_HANDLE,
-            imageIndex);
-
-        return result;
-    }
-
-    VkResult SwapChain::submitCommandBuffers(
-        const VkCommandBuffer* buffers, uint32_t* imageIndex, uint32_t frameIndex) {
-
-        // If another frame is already using this image, wait for its fence
-        if (imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-            vkWaitForFences(device.device(), 1, &imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
-        }
-        // Mark this image as now being in-flight on this frame's fence
-        imagesInFlight[*imageIndex] = inFlightFences[frameIndex];
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        // Wait on the per-frame acquire semaphore
-        VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[frameIndex] };
-        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = buffers;
-
-        // Signal the per-frame render finished semaphore
-        VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[*imageIndex] };
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-
-        // Reset and submit
-        vkResetFences(device.device(), 1, &inFlightFences[frameIndex]);
-        if (vkQueueSubmit(device.graphicsQueue(), 1, &submitInfo, inFlightFences[frameIndex]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
-        }
-
-        VkPresentInfoKHR presentInfo = {};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        // Present waits on the same per-frame render finished semaphore
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
-
-        VkSwapchainKHR swapChains[] = { swapChain };
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
-        presentInfo.pImageIndices = imageIndex;
-
-        auto result = vkQueuePresentKHR(device.presentQueue(), &presentInfo);
-
-        return result;
+        // For compatibility, just acquire the image with no semaphore (Renderer will do the real call)
+        // But to keep the interface, you may want to pass the semaphore as an argument in the future
+        // For now, just return VK_NOT_READY to indicate the Renderer should handle it
+        return VK_NOT_READY;
     }
 
     void SwapChain::init()
@@ -144,7 +68,6 @@ namespace grape {
         createRenderPass();
         createDepthResources();
         createFramebuffers();
-        createSyncObjects();
     }
 
     void SwapChain::createSwapChain() {
@@ -365,45 +288,6 @@ namespace grape {
         }
     }
 
-    void SwapChain::createSyncObjects() {
-        // Create semaphores per frame for image acquisition
-        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
-
-        // Create semaphores per swapchain image for render finished
-        renderFinishedSemaphores.resize(imageCount(), VK_NULL_HANDLE);
-
-        // Create fences per frame in flight
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT, VK_NULL_HANDLE);
-
-        // Track which fence is protecting each image
-        imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
-
-        VkSemaphoreCreateInfo semaphoreInfo = {};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo = {};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        // Create per-frame resources (imageAvailable semaphores and fences)
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create image available semaphore for frame " + std::to_string(i));
-            }
-
-            if (vkCreateFence(device.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create fence for frame " + std::to_string(i));
-            }
-        }
-
-        // Create per-image render finished semaphores
-        for (size_t i = 0; i < imageCount(); i++) {
-            if (vkCreateSemaphore(device.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create render finished semaphore for image " + std::to_string(i));
-            }
-        }
-    }
-
     VkSurfaceFormatKHR SwapChain::chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats) {
         for (const auto& availableFormat : availableFormats) {
@@ -418,20 +302,6 @@ namespace grape {
 
     VkPresentModeKHR SwapChain::chooseSwapPresentMode(
         const std::vector<VkPresentModeKHR>& availablePresentModes) {
-        /*for (const auto& availablePresentMode : availablePresentModes) {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                std::cout << "Present mode: Mailbox" << std::endl;
-                return availablePresentMode;
-            }
-        }*/
-
-        // for (const auto &availablePresentMode : availablePresentModes) {
-        //   if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-        //     std::cout << "Present mode: Immediate" << std::endl;
-        //     return availablePresentMode;
-        //   }
-        // }
-
         std::cout << "Present mode: V-Sync" << std::endl;
         return VK_PRESENT_MODE_FIFO_KHR;
     }

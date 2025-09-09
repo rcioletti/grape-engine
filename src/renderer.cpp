@@ -9,20 +9,31 @@ namespace grape {
 	Renderer::Renderer(Window& window, Device& device) : grapeWindow{ window }, grapeDevice{ device } {
 		recreateSwapChain();
 		createCommandBuffers();
-		// createSyncObjects(); // This is now called inside recreateSwapChain, only on the first swap chain creation
 	}
 
 	Renderer::~Renderer() {
 		vkDeviceWaitIdle(grapeDevice.device());
 
-		// Clean up synchronization objects
+		 // Destroy per-frame semaphores
 		for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
-			vkDestroySemaphore(grapeDevice.device(), renderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(grapeDevice.device(), imageAvailableSemaphores[i], nullptr);
+			if (imageAvailableSemaphores[i] != VK_NULL_HANDLE)
+				vkDestroySemaphore(grapeDevice.device(), imageAvailableSemaphores[i], nullptr);
 		}
+		imageAvailableSemaphores.clear();
+
+		// Destroy per-image semaphores
+		for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+			if (renderFinishedSemaphores[i] != VK_NULL_HANDLE)
+				vkDestroySemaphore(grapeDevice.device(), renderFinishedSemaphores[i], nullptr);
+		}
+		renderFinishedSemaphores.clear();
+
+		// Destroy fences
 		for (size_t i = 0; i < inFlightFences.size(); i++) {
-			vkDestroyFence(grapeDevice.device(), inFlightFences[i], nullptr);
+			if (inFlightFences[i] != VK_NULL_HANDLE)
+				vkDestroyFence(grapeDevice.device(), inFlightFences[i], nullptr);
 		}
+		inFlightFences.clear();
 
 		freeCommandBuffers();
 	}
@@ -30,27 +41,27 @@ namespace grape {
 	VkCommandBuffer Renderer::beginFrame() {
 		assert(!isFrameStarted && "Can't call beginFrame while already in progress");
 
-		// Wait for the fence to be signaled by the previous frame that used this command buffer
-		vkWaitForFences(
-			grapeDevice.device(),
-			1,
-			&inFlightFences[currentFrame],
-			VK_TRUE,
-			std::numeric_limits<uint64_t>::max());
+		// Wait for the fence for this frame
+		vkWaitForFences(grapeDevice.device(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-		 // Acquire the next image, signaling the per-image semaphore
-		auto result = grapeSwapChain->acquireNextImage(&currentImageIndex, currentFrame);
+		// Acquire the next image, signaling the per-frame semaphore
+		VkResult result = vkAcquireNextImageKHR(
+			grapeDevice.device(),
+			grapeSwapChain->getSwapChain(),
+			UINT64_MAX,
+			imageAvailableSemaphores[currentFrame],
+			VK_NULL_HANDLE,
+			&currentImageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapChain();
 			return nullptr;
 		}
-
 		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
-		// Check if a previous frame is using this image
+		// If a previous frame is using this image, wait for it
 		if (imagesInFlight[currentImageIndex] != VK_NULL_HANDLE) {
 			vkWaitForFences(grapeDevice.device(), 1, &imagesInFlight[currentImageIndex], VK_TRUE, UINT64_MAX);
 		}
@@ -67,14 +78,12 @@ namespace grape {
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
-		vkResetFences(grapeDevice.device(), 1, &inFlightFences[currentFrame]);
-
 		return commandBuffer;
 	}
 
 	void Renderer::createSyncObjects() {
 		size_t imageCount = grapeSwapChain->imageCount();
-		imageAvailableSemaphores.resize(imageCount);
+		imageAvailableSemaphores.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(imageCount);
 		inFlightFences.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
 		imagesInFlight.resize(imageCount, VK_NULL_HANDLE);
@@ -86,15 +95,19 @@ namespace grape {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < imageCount; i++) {
-			if (vkCreateSemaphore(grapeDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(grapeDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create synchronization objects for a swapchain image!");
+		// Create per-frame imageAvailableSemaphores and inFlightFences
+		for (size_t i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
+			if (vkCreateSemaphore(grapeDevice.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create imageAvailableSemaphore!");
+			}
+			if (vkCreateFence(grapeDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create inFlightFence!");
 			}
 		}
-		for (size_t i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-			if (vkCreateFence(grapeDevice.device(), &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create synchronization fence for a frame!");
+		// Create per-image renderFinishedSemaphores
+		for (size_t i = 0; i < imageCount; i++) {
+			if (vkCreateSemaphore(grapeDevice.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create renderFinishedSemaphore!");
 			}
 		}
 	}
@@ -108,23 +121,22 @@ namespace grape {
 			throw std::runtime_error("failed to record command buffer");
 		}
 
+		VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentImageIndex] };
+
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		// Wait on the semaphore for the acquired image
-		VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentImageIndex] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
-
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
-
-		// Signal semaphore for rendering finished, also per-image
-		VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentImageIndex] };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		// Reset the fence before using it for this frame
+		vkResetFences(grapeDevice.device(), 1, &inFlightFences[currentFrame]);
 
 		if (vkQueueSubmit(grapeDevice.graphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
@@ -132,11 +144,8 @@ namespace grape {
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-		// Wait on the render finished semaphore
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
-
 		VkSwapchainKHR swapChains[] = { grapeSwapChain->getSwapChain() };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
@@ -149,8 +158,7 @@ namespace grape {
 			isFrameStarted = false;
 			recreateSwapChain();
 			return;
-		}
-		else if (result != VK_SUCCESS) {
+		} else if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 
@@ -231,16 +239,12 @@ namespace grape {
 			glfwWaitEvents();
 		}
 
-		// Wait for all operations to complete before recreating
 		vkDeviceWaitIdle(grapeDevice.device());
 
 		if (grapeSwapChain == nullptr) {
 			grapeSwapChain = std::make_unique<SwapChain>(grapeDevice, extent);
-			// After creating the first swap chain, we need to recreate sync objects
-			// because imagesInFlight size depends on swap chain image count
 			createSyncObjects();
-		}
-		else {
+		} else {
 			std::shared_ptr<SwapChain> oldSwapChain = std::move(grapeSwapChain);
 			grapeSwapChain = std::make_unique<SwapChain>(grapeDevice, extent, oldSwapChain);
 
@@ -248,14 +252,26 @@ namespace grape {
 				throw std::runtime_error("Swap chain image (or depth) format has changed!");
 			}
 
-			// If the number of images changed, recreate sync objects
+			// If the number of images changed, destroy old semaphores and recreate
 			if (imagesInFlight.size() != grapeSwapChain->imageCount()) {
-				// We need to clean up old objects before creating new ones
-				for (size_t i = 0; i < SwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-					vkDestroySemaphore(grapeDevice.device(), renderFinishedSemaphores[i], nullptr);
-					vkDestroySemaphore(grapeDevice.device(), imageAvailableSemaphores[i], nullptr);
-					vkDestroyFence(grapeDevice.device(), inFlightFences[i], nullptr);
+				for (auto sem : renderFinishedSemaphores) {
+					if (sem != VK_NULL_HANDLE)
+						vkDestroySemaphore(grapeDevice.device(), sem, nullptr);
 				}
+				renderFinishedSemaphores.clear();
+
+				for (auto sem : imageAvailableSemaphores) {
+					if (sem != VK_NULL_HANDLE)
+						vkDestroySemaphore(grapeDevice.device(), sem, nullptr);
+				}
+				imageAvailableSemaphores.clear();
+
+				for (auto fence : inFlightFences) {
+					if (fence != VK_NULL_HANDLE)
+						vkDestroyFence(grapeDevice.device(), fence, nullptr);
+				}
+				inFlightFences.clear();
+
 				createSyncObjects();
 			}
 		}
