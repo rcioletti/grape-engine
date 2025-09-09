@@ -37,8 +37,8 @@ namespace grape {
         }
         VkFormat findDepthFormat();
 
-        VkResult acquireNextImage(uint32_t* imageIndex);
-        VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex);
+        VkResult acquireNextImage(uint32_t* imageIndex, uint32_t frameIndex);
+        VkResult submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex, uint32_t frameIndex);
 
         bool compareSwapFormats(const SwapChain& swapChain) const {
             return swapChain.swapChainDepthFormat == swapChainDepthFormat && swapChain.swapChainImageFormat == swapChainImageFormat;
@@ -83,7 +83,8 @@ namespace grape {
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
         std::vector<VkFence> imagesInFlight;
-        size_t currentFrame = 0;
+        uint32_t nextSemaphoreIndex = 0;
+        uint32_t acquiredImageSemaphoreIndex = 0;
     };
 
 }

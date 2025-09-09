@@ -6,6 +6,7 @@
 #include "renderer.hpp"
 #include "descriptors.hpp"
 #include "physics.hpp"
+#include "viewport_renderer.hpp"
 
 #include <memory>
 #include <vector>
@@ -30,14 +31,13 @@ namespace grape {
 
 		void initImGui();
 
-		void createViewportImages();
-
 		Window grapeWindow{ WIDTH, HEIGHT, "Grape Engine" };
 		Device grapeDevice{ grapeWindow };
 		Renderer grapeRenderer{ grapeWindow, grapeDevice };
 
 		std::unique_ptr<DescriptorPool> globalPool{};
 		std::unique_ptr<DescriptorPool> imGuiImagePool{};
+		VkDescriptorPool imguiDescriptorPool;
 		GameObject::Map gameObjects;
 
 		std::vector<Texture> textures;

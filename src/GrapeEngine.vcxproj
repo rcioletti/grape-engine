@@ -125,13 +125,13 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\projects\engine\grape-engine\external\physx\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\stb_image;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\rapidjson\include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\tinyobjloader;C:\VulkanSDK\1.3.275.0\Include;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glm;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\projects\grape-engine\external\physx\include;D:\projects\grape-engine\external\stb_image;D:\projects\grape-engine\external\rapidjson\include;D:\projects\grape-engine\external\tinyobjloader;C:\VulkanSDK\1.4.321.1\Include;D:\projects\grape-engine\external\glm;D:\projects\grape-engine\external\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\projects\engine\grape-engine\external\physx\lib\Debug;C:\Users\Rod\Documents\Visual Studio 2022\Libraries\glfw-3.3.9.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.3.275.0\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\projects\grape-engine\external\physx\lib\Debug;D:\projects\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.321.1\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXCooking_64.lib;PhysXExtensions_static_64.lib;PhysXFoundation_64.lib;PhysXTask_static_64.lib;PhysXPvdSDK_static_64.lib;PVDRuntime_64.lib;PhysXCharacterKinematic_static_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -199,6 +199,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClCompile Include="systems\simple_render_system.cpp" />
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="ui.cpp" />
+    <ClCompile Include="viewport_renderer.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -229,6 +230,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="texture.hpp" />
     <ClInclude Include="ui.hpp" />
     <ClInclude Include="utils.hpp" />
+    <ClInclude Include="viewport_renderer.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

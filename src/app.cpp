@@ -40,7 +40,7 @@ namespace grape {
 		globalPool = DescriptorPool::Builder(grapeDevice)
 			.setMaxSets(SwapChain::MAX_FRAMES_IN_FLIGHT * 2)
 			.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, SwapChain::MAX_FRAMES_IN_FLIGHT)
-			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, SwapChain::MAX_FRAMES_IN_FLIGHT * 2)
+			.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, SwapChain::MAX_FRAMES_IN_FLIGHT * 8)
 			.setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
 			.build();
 
@@ -55,8 +55,19 @@ namespace grape {
 
 	App::~App()
 	{
+		vkDeviceWaitIdle(grapeDevice.device());
+
 		for (auto& texture : textures){
 			texture.cleanup();
+		}
+
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+
+		if (imguiDescriptorPool != VK_NULL_HANDLE) {
+			vkDestroyDescriptorPool(grapeDevice.device(), imguiDescriptorPool, nullptr);
+			imguiDescriptorPool = VK_NULL_HANDLE;
 		}
 	}
 
@@ -71,7 +82,7 @@ namespace grape {
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 				grapeDevice.properties.limits.minUniformBufferOffsetAlignment
-				);
+			);
 			uboBuffers[i]->map();
 		}
 
@@ -81,6 +92,8 @@ namespace grape {
 			.build();
 
 		std::vector<VkDescriptorSet> globalDescriptorSets(SwapChain::MAX_FRAMES_IN_FLIGHT);
+		std::cout << "Created globalDescriptorSets with size: " << globalDescriptorSets.size() << std::endl;
+
 		for (int i = 0; i < globalDescriptorSets.size(); i++) {
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
 
@@ -108,45 +121,138 @@ namespace grape {
 				.build(globalDescriptorSets[i]);
 		}
 
-		SimpleRenderSystem simpleRenderSystem{ grapeDevice, grapeRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout()};
+		SimpleRenderSystem simpleRenderSystem{ grapeDevice, grapeRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
 		PointLightSystem pointLightSystem{ grapeDevice, grapeRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout() };
-        Camera camera{};
-        camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
+		Camera camera{};
+		camera.setViewTarget(glm::vec3(-1.f, -2.f, 2.f), glm::vec3(0.f, 0.f, 2.5f));
 
-        auto viewerObject = GameObject::createGameObject();
+		auto viewerObject = GameObject::createGameObject();
 		viewerObject.transform.translation.z = -2.5f;
-        KeyboardMovementController cameraController{};
+		KeyboardMovementController cameraController{};
 
-        auto currentTime = std::chrono::high_resolution_clock::now();
+		auto currentTime = std::chrono::high_resolution_clock::now();
 
 		initImGui();
 
-		//createViewportImages();
+		// Don't create viewport renderer here - wait for valid ImGui dimensions
+		// viewportRenderer will be created in the render loop when we have valid size
+
+		VkExtent2D viewportExtent = { 1280, 720 };  // Default size
+		VkExtent2D pendingViewportExtent = { 1280, 720 };
+		bool needsViewportResize = false;
+		std::unique_ptr<ViewportRenderer> viewportRenderer = nullptr;
 
 		while (!grapeWindow.shoudClose()) {
 			glfwPollEvents();
 
-            auto newTime = std::chrono::high_resolution_clock::now();
-            float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
+			auto newTime = std::chrono::high_resolution_clock::now();
+			float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
 
-            currentTime = newTime;
+			currentTime = newTime;
 
-            cameraController.moveInPlaneXZ(grapeWindow.getGLFWwindow(), frameTime, viewerObject);
-            camera.setViewYXZ(viewerObject.transform.translation, viewerObject.transform.rotation);
+			cameraController.moveInPlaneXZ(grapeWindow.getGLFWwindow(), frameTime, viewerObject);
+			camera.setViewYXZ(viewerObject.transform.translation, glm::eulerAngles(viewerObject.transform.rotation));
 
-            float aspect = grapeRenderer.getAspectRatio();
-            //camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
-            camera.setPerspectiveProjection(glm::radians(50.f), aspect, .1f, 100.f);
+			float aspect = grapeRenderer.getAspectRatio();
+			camera.setPerspectiveProjection(glm::radians(50.f), aspect, .1f, 100.f);
 
+			// PHYSICS UPDATE
+			physics.StepPhysics(frameTime);
 
-			//Nvidia PhysX setup FIX LATER
-			//physics.StepPhysics(frameTime);
+			// Update all physics-enabled game objects
+			for (auto& kv : gameObjects) {
+				auto& obj = kv.second;
+				if (obj.hasPhysics()) {
+					obj.updatePhysics();
+				}
+			}
 
-			//gameObjects.at(3).transform.translation = {body->getGlobalPose().p.x, -body->getGlobalPose().p.y, body->getGlobalPose().p.z };
-			//glm::quat q(body->getGlobalPose().q.x, body->getGlobalPose().q.y, body->getGlobalPose().q.z, body->getGlobalPose().q.w);
-			//glm::vec3 euler = glm::eulerAngles(q);
-			//gameObjects.at(3).transform.rotation = { euler.x, -euler.y, euler.z };
-			
+			for (auto& kv : gameObjects) {
+				auto& obj = kv.second;
+				if (obj.hasPhysics() && obj.physicsComponent->isKinematic) {
+					glm::vec3 movement(0.f);
+					if (glfwGetKey(grapeWindow.getGLFWwindow(), GLFW_KEY_I) == GLFW_PRESS) movement.z -= 1.f;
+					if (glfwGetKey(grapeWindow.getGLFWwindow(), GLFW_KEY_K) == GLFW_PRESS) movement.z += 1.f;
+					if (glfwGetKey(grapeWindow.getGLFWwindow(), GLFW_KEY_J) == GLFW_PRESS) movement.x -= 1.f;
+					if (glfwGetKey(grapeWindow.getGLFWwindow(), GLFW_KEY_L) == GLFW_PRESS) movement.x += 1.f;
+
+					if (glm::length(movement) > 0.f) {
+						movement = glm::normalize(movement) * frameTime * 3.f;
+						glm::vec3 newPos = obj.transform.translation + movement;
+						obj.setPhysicsTransform(newPos);
+					}
+					break;
+				}
+			}
+
+			auto extent = grapeWindow.getExtent();
+			if (extent.width == 0 || extent.height == 0) {
+				continue;
+			}
+
+			// Handle viewport resize BEFORE starting ImGui frame
+			if (needsViewportResize) {
+				vkDeviceWaitIdle(grapeDevice.device());
+				viewportExtent = pendingViewportExtent;
+				viewportRenderer->resize(viewportExtent);
+				needsViewportResize = false;
+			}
+
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+			// Get viewport size for resize detection
+			ImGui::Begin("Viewport");
+			ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+			ImGui::End();
+
+			// Validate the viewport size before casting to uint32_t
+			uint32_t newWidth = 0;
+			uint32_t newHeight = 0;
+
+			if (viewportPanelSize.x > 0.0f && viewportPanelSize.y > 0.0f &&
+				viewportPanelSize.x <= 16384.0f && viewportPanelSize.y <= 16384.0f) {
+				newWidth = static_cast<uint32_t>(viewportPanelSize.x);
+				newHeight = static_cast<uint32_t>(viewportPanelSize.y);
+			}
+
+			if (!viewportRenderer && newWidth > 0 && newHeight > 0) {
+				try {
+					std::cout << "Creating ViewportRenderer with size: " << newWidth << "x" << newHeight << std::endl;
+					viewportExtent = { newWidth, newHeight };
+					viewportRenderer = std::make_unique<ViewportRenderer>(grapeDevice, viewportExtent);
+					std::cout << "ViewportRenderer created successfully" << std::endl;
+				}
+				catch (const std::exception& e) {
+					std::cerr << "Failed to create ViewportRenderer: " << e.what() << std::endl;
+				}
+			}
+
+			// Handle viewport resize AFTER we have a valid renderer
+			if (viewportRenderer && needsViewportResize) {
+				try {
+					std::cout << "Resizing viewport from " << viewportExtent.width << "x" << viewportExtent.height
+						<< " to " << pendingViewportExtent.width << "x" << pendingViewportExtent.height << std::endl;
+					vkDeviceWaitIdle(grapeDevice.device());
+					viewportExtent = pendingViewportExtent;
+					viewportRenderer->resize(viewportExtent);
+					needsViewportResize = false;
+					std::cout << "Viewport resize completed" << std::endl;
+				}
+				catch (const std::exception& e) {
+					std::cerr << "Error during viewport resize: " << e.what() << std::endl;
+					needsViewportResize = false; // Reset flag to prevent continuous retry
+				}
+			}
+
+			// Check for resize and set flag for next frame
+			if (viewportRenderer && newWidth > 0 && newHeight > 0 &&
+				(newWidth != viewportExtent.width || newHeight != viewportExtent.height)) {
+				pendingViewportExtent = { newWidth, newHeight };
+				needsViewportResize = true;
+			}
+
 			if (auto commandBuffer = grapeRenderer.beginFrame()) {
 
 				int frameIndex = grapeRenderer.getFrameIndex();
@@ -163,26 +269,53 @@ namespace grape {
 				GlobalUbo ubo{};
 				ubo.projection = camera.getProjection();
 				ubo.view = camera.getView();
-				ubo.inverseView = camera.getProjection();
+				ubo.inverseView = camera.getInverseView();
 				pointLightSystem.update(frameInfo, ubo);
 				uboBuffers[frameIndex]->writeToBuffer(&ubo);
 				uboBuffers[frameIndex]->flush();
 
-				// render
-				grapeRenderer.beginSwapChainRenderPass(commandBuffer);
-				simpleRenderSystem.renderGameObjects(frameInfo);
-				pointLightSystem.render(frameInfo);
+				// render to viewport (skip if resizing)
+				if (!needsViewportResize && viewportRenderer) {
+					try {
+						viewportRenderer->beginRenderPass(commandBuffer, frameIndex);
+						simpleRenderSystem.renderGameObjects(frameInfo);
+						pointLightSystem.render(frameInfo);
+						viewportRenderer->endRenderPass(commandBuffer);
+					}
+					catch (const std::exception& e) {
+						std::cerr << "Error during viewport rendering: " << e.what() << std::endl;
+					}
+				}
 
-				ImGui_ImplVulkan_NewFrame();
-				ImGui_ImplGlfw_NewFrame();
-				ImGui::NewFrame();
+				grapeRenderer.beginSwapChainRenderPass(commandBuffer);
 
 				UI::renderUI();
 
 				ImGui::Begin("Viewport");
-				
-				//ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-				//ImGui::Image(dSet[frameInfo.frameIndex], ImVec2{viewportPanelSize.x, viewportPanelSize.y});
+
+				// Only display image if we have a valid renderer and not currently resizing
+				if (viewportRenderer && !needsViewportResize) {
+					VkDescriptorSet texId = viewportRenderer->getImGuiDescriptorSet(frameIndex);
+					if (texId != VK_NULL_HANDLE) {
+						// Use the actual panel size, but make sure it's valid
+						ImVec2 displaySize = ImGui::GetContentRegionAvail();
+						if (displaySize.x > 0 && displaySize.y > 0) {
+							ImGui::Image(texId, displaySize);
+						}
+						else {
+							ImGui::Text("Invalid panel size");
+						}
+					}
+					else {
+						ImGui::Text("Invalid texture descriptor");
+					}
+				}
+				else if (needsViewportResize) {
+					ImGui::Text("Resizing viewport...");
+				}
+				else {
+					ImGui::Text("Viewport not ready");
+				}
 
 				ImGui::End();
 				ImGui::SetNextWindowBgAlpha(1.0f);
@@ -206,56 +339,19 @@ namespace grape {
 
 	void App::loadGameObjects()
 	{
-		std::shared_ptr<Model> grapeModel = Model::createModelFromFile(grapeDevice, "models/smooth_vase.obj");
+		std::shared_ptr<Model> grapeModel = Model::createModelFromFile(grapeDevice, "models/Mario.obj");
 
-		//vase
-		auto smoothVase = GameObject::createGameObject();
-		smoothVase.model = grapeModel;
-		smoothVase.transform.translation = { .0f, .5f, 0.f };
-		smoothVase.transform.scale = glm::vec3(3.f);
-		Texture smoothVaseTexture = Texture(grapeDevice);
-		smoothVaseTexture.createTextureFromFile("textures/ceramic.jpg");
-		textures.push_back(smoothVaseTexture);
-		smoothVase.imgIndex = static_cast<uint32_t>(textures.size() - 1);
-		gameObjects.emplace(smoothVase.getId(), std::move(smoothVase));
-
-		//chair
-		grapeModel = Model::createModelFromFile(grapeDevice, "models/chair.obj");
-		auto chair = GameObject::createGameObject();
-		chair.model = grapeModel;
-		chair.transform.translation = { 0.f, 0.1f, 0.f };
-		chair.transform.rotation = { 0.f, 4.0f, 3.15f };
-		chair.transform.scale = glm::vec3(.001f);
-		Texture chairTexture = Texture(grapeDevice);
-		chairTexture.createTextureFromFile("textures/chair.png");
-		textures.push_back(chairTexture);
-		chair.imgIndex = static_cast<uint32_t>(textures.size() - 1);
-		gameObjects.emplace(chair.getId(), std::move(chair));
-
-		//floor
-		grapeModel = Model::createModelFromFile(grapeDevice, "models/quad.obj");
-		auto floor = GameObject::createGameObject();
-		floor.model = grapeModel;
-		floor.transform.translation = { 0.f, .5f, 0.f };
-		floor.transform.scale = glm::vec3(6.f, 2.f, 6.f);
-		Texture floorTexture = Texture(grapeDevice);
-		floorTexture.createTextureFromFile("textures/wood_floor.jpg");
-		textures.push_back(floorTexture);
-		floor.imgIndex = static_cast<uint32_t>(textures.size() - 1);
-		gameObjects.emplace(floor.getId(), std::move(floor));
-
-		grapeModel = Model::createModelFromFile(grapeDevice, "models/cube.obj");
-		auto box = GameObject::createGameObject();
-		box.model = grapeModel;
-		box.transform.translation = { 0.f, -5.f, 0.f };
-		box.transform.scale = glm::vec3(0.5f, 0.5f, 0.5f);
-		gameObjects.emplace(box.getId(), std::move(box));
-
-		//PxShape* shape = physics.CreateBoxShape(0.5f, 0.5f, 0.5f, box.transform.toPxTransform(), physics.GetDefaultMaterial());
-		//body = physics.CreateRigidDynamic(TransformComponent().mat4(), shape);
-
-		//PxShape* shape2 = physics.CreateBoxShape(0.5f, 0.5f, 0.5f, PxTransform(), physics.GetDefaultMaterial());
-		//PxRigidDynamic* body2 = physics.CreateRigidDynamic(TransformComponent().mat4(), shape2);
+		//mario
+		auto mario = GameObject::createPhysicsObject(physics, glm::vec3(0.f, 5.f, 0.f), true, false);
+		mario.model = grapeModel;
+		mario.transform.scale = glm::vec3(.5f);
+		mario.transform.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.f, 0.f, 0.f));
+		mario.addBoxCollider(physics, glm::vec3(0.5f, 0.5f, 0.5f));
+		Texture marioTexture = Texture(grapeDevice);
+		marioTexture.createTextureFromFile("textures/ceramic.jpg");
+		textures.push_back(marioTexture);
+		mario.imgIndex = static_cast<uint32_t>(textures.size() - 1);
+		gameObjects.emplace(mario.getId(), std::move(mario));
 
 		std::vector<glm::vec3> lightColors{
 		  {1.f, .1f, .1f},
@@ -263,7 +359,7 @@ namespace grape {
 		  {.1f, 1.f, .1f},
 		  {1.f, 1.f, .1f},
 		  {.1f, 1.f, 1.f},
-		  {1.f, 1.f, 1.f}  //
+		  {1.f, 1.f, 1.f}
 		};
 
 		for (int i = 0; i < lightColors.size(); i++) {
@@ -287,24 +383,50 @@ namespace grape {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 		ImGui::StyleColorsDark();
-
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
 			style.WindowRounding = 0.0f;
-			style.Colors[ImGuiCol_WindowBg].w = 0.0f;
+			style.Colors[ImGuiCol_WindowBg].w = 1.0f; // Make fully opaque
 		}
 
 		ImGui_ImplGlfw_InitForVulkan(grapeWindow.getGLFWwindow(), true);
 
+		// Create a separate, larger descriptor pool for ImGui
+		VkDescriptorPool imguiDescriptorPool;
+		VkDescriptorPoolSize pool_sizes[] =
+		{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = 1000;
+		pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+		pool_info.pPoolSizes = pool_sizes;
+
+		if (vkCreateDescriptorPool(grapeDevice.device(), &pool_info, nullptr, &imguiDescriptorPool) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create ImGui descriptor pool!");
+		}
+
 		ImGui_ImplVulkan_InitInfo info = {};
-		info.DescriptorPool = globalPool->getDescriptorPool();
+		info.DescriptorPool = imguiDescriptorPool;  // Use the new ImGui-specific pool
 		info.RenderPass = grapeRenderer.getSwapChainRenderPass();
 		info.Device = grapeDevice.device();
 		info.PhysicalDevice = grapeDevice.getPhysicalDevice();
@@ -314,72 +436,9 @@ namespace grape {
 		info.Queue = grapeDevice.graphicsQueue();
 		info.CheckVkResultFn = check_vk_result;
 		info.Instance = grapeDevice.getInstance();
+
 		ImGui_ImplVulkan_Init(&info);
-	}
 
-	void App::createViewportImages()
-	{
-		//Create and render vulkan image to ImGui window
-		VkSampler viewportSampler;
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = grapeDevice.properties.limits.maxSamplerAnisotropy;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
-
-		if (vkCreateSampler(grapeDevice.device(), &samplerInfo, nullptr, &viewportSampler) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture sampler!");
-		}
-
-		std::vector<VkImage> viewportImages;
-		std::vector<VkDeviceMemory> dstImageMemory;
-		std::vector<VkImageView> viewportImageViews;
-
-		viewportImages.resize(grapeRenderer.getSwapChainImageCount());
-		dstImageMemory.resize(grapeRenderer.getSwapChainImageCount());
-
-		//Render Images to ImGui window
-
-		for (uint32_t i = 0; i < grapeRenderer.getSwapChainImageCount(); i++) {
-			Texture t = Texture(grapeDevice);
-			t.createImage(512,
-				512,
-				VK_FORMAT_B8G8R8A8_SRGB,
-				VK_IMAGE_TILING_LINEAR,
-				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				viewportImages[i],
-				dstImageMemory[i]);
-
-			t.transitionImageLayout(viewportImages[i], VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		}
-
-		viewportImageViews.resize(viewportImages.size());
-
-		for (uint32_t i = 0; i < viewportImages.size(); i++) {
-			Texture t = Texture(grapeDevice);
-			viewportImageViews[i] = t.createImageView(viewportImages[i], VK_FORMAT_B8G8R8A8_SRGB);
-		}
-
-		std::vector<VkDescriptorSet> dSet;
-		dSet.resize(viewportImageViews.size());
-
-		//grapeRenderer.getSwapChainImageView();
-
-		for (uint32_t i = 0; i < viewportImageViews.size(); i++) {
-			dSet[i] = ImGui_ImplVulkan_AddTexture(viewportSampler, viewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		}
+		this->imguiDescriptorPool = imguiDescriptorPool;
 	}
 }

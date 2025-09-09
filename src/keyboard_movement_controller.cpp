@@ -41,13 +41,16 @@ namespace grape {
 		};
 
 		if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
-			gameObject.transform.rotation += lookSpeed * dt * glm::normalize(rotate);
+			glm::vec3 euler = glm::eulerAngles(gameObject.transform.rotation);
+			euler += lookSpeed * dt * glm::normalize(rotate);
+			// clamp pitch (x)
+			euler.x = glm::clamp(euler.x, -1.5f, 1.5f);
+			// wrap yaw (y)
+			euler.y = glm::mod(euler.y, glm::two_pi<float>());
+			gameObject.transform.rotation = glm::quat(euler);
 		}
 
-		gameObject.transform.rotation.x = glm::clamp(gameObject.transform.rotation.x, -1.5f, 1.5f);
-		gameObject.transform.rotation.y = glm::mod(gameObject.transform.rotation.y, glm::two_pi<float>());
-
-		float yaw = gameObject.transform.rotation.y;
+		float yaw = glm::eulerAngles(gameObject.transform.rotation).y;
 		const glm::vec3 fowardDir{ sin(yaw), 0.f, cos(yaw) };
 		const glm::vec3 rightDir{ fowardDir.z, 0.f, -fowardDir.x };
 		const glm::vec3 upDir{ 0.f, -1.f, 0.f };

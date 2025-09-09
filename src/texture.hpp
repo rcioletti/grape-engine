@@ -28,7 +28,7 @@ namespace grape {
 
 		void createTextureImageView();
 
-		VkImageView createImageView(VkImage image, VkFormat format);
+		VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
 
 		void createTextureSampler();
 

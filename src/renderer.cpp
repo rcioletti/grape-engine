@@ -17,11 +17,10 @@ namespace grape {
 		freeCommandBuffers();
 	}
 
-	VkCommandBuffer Renderer::beginFrame(){
-		
+	VkCommandBuffer Renderer::beginFrame() {
 		assert(!isFrameStarted && "Can't call beginFrame while already in progress");
 
-		auto result = grapeSwapChain->acquireNextImage(&currentImageIndex);
+		auto result = grapeSwapChain->acquireNextImage(&currentImageIndex, currentFrameIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapChain();
@@ -46,9 +45,8 @@ namespace grape {
 		return commandBuffer;
 	}
 
-	void Renderer::endFrame(){
-		
-		assert(isFrameStarted && "Can't call endFrame while already in progress");
+	void Renderer::endFrame() {
+		assert(isFrameStarted && "Can't call endFrame while frame is not started");
 
 		auto commandBuffer = getCurrentCommandBuffer();
 
@@ -56,12 +54,18 @@ namespace grape {
 			throw std::runtime_error("failed to record command buffer");
 		}
 
-		auto result = grapeSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex);
+		auto result = grapeSwapChain->submitCommandBuffers(&commandBuffer, &currentImageIndex, currentFrameIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || grapeWindow.wasWindowResized()) {
 			grapeWindow.resetWindowResizedFlag();
+			// Set frame as not started before recreation
+			isFrameStarted = false;
 			recreateSwapChain();
-		} else if (result != VK_SUCCESS) {
+			// After recreation, frame is definitely not started
+			// The next beginFrame() call will start a new frame properly
+			return;
+		}
+		else if (result != VK_SUCCESS) {
 			throw std::runtime_error("failed to present swap chain image!");
 		}
 
@@ -135,15 +139,14 @@ namespace grape {
 		commandBuffers.clear();
 	}
 
-	void Renderer::recreateSwapChain()
-	{
+	void Renderer::recreateSwapChain() {
 		auto extent = grapeWindow.getExtent();
-		while (extent.width == 0 || extent.height == 0)
-		{
+		while (extent.width == 0 || extent.height == 0) {
 			extent = grapeWindow.getExtent();
 			glfwWaitEvents();
 		}
 
+		// Wait for all operations to complete before recreating
 		vkDeviceWaitIdle(grapeDevice.device());
 
 		if (grapeSwapChain == nullptr) {
@@ -154,10 +157,44 @@ namespace grape {
 			grapeSwapChain = std::make_unique<SwapChain>(grapeDevice, extent, oldSwapChain);
 
 			if (!oldSwapChain->compareSwapFormats(*grapeSwapChain.get())) {
-				throw std::runtime_error("Swap chain image(or depthh) format has changed!");
+				throw std::runtime_error("Swap chain image (or depth) format has changed!");
 			}
 		}
 
-		//if render pass is compatible do not recreate pipeline
+		// Don't reset currentFrameIndex - let it continue cycling
+		// currentImageIndex will be set by the next acquireNextImage call
 	}
+
+	void Renderer::beginOffscreenRenderPass(VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, VkRenderPass renderPass, VkExtent2D extent) {
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.framebuffer = framebuffer;
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = extent;
+
+		std::array<VkClearValue, 2> clearValues{};
+		clearValues[0].color = { 0.01f, 0.01f, 0.01f, 1.0f };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassInfo.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(extent.width);
+		viewport.height = static_cast<float>(extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		VkRect2D scissor{ {0, 0}, extent };
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	}
+
+	void Renderer::endOffscreenRenderPass(VkCommandBuffer commandBuffer) {
+		vkCmdEndRenderPass(commandBuffer);
+	}
+
 }
