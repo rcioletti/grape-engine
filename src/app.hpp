@@ -7,6 +7,7 @@
 #include "descriptors.hpp"
 #include "physics.hpp"
 #include "viewport_renderer.hpp"
+#include "texture.hpp"
 
 #include <memory>
 #include <vector>
@@ -39,8 +40,8 @@ namespace grape {
 		std::unique_ptr<DescriptorPool> imGuiImagePool{};
 		VkDescriptorPool imguiDescriptorPool;
 		GameObject::Map gameObjects;
+		std::unordered_map<std::string, std::unique_ptr<Texture>> loadedTextures;
 
-		std::vector<Texture> textures;
 		Physics physics;
 		PxRigidDynamic* body;
 	};

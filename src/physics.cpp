@@ -44,8 +44,7 @@ namespace grape {
 		}
 
 		PxSceneDesc sceneDesc(_physics->getTolerancesScale());
-		// Positive Y gravity to match Y-down coordinate system
-		sceneDesc.gravity = PxVec3(0.0f, 9.81f, 0.0f);
+		sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
 		_dispatcher = PxDefaultCpuDispatcherCreate(2);
 		sceneDesc.cpuDispatcher = _dispatcher;
 		sceneDesc.filterShader = PxDefaultSimulationFilterShader;
@@ -62,8 +61,7 @@ namespace grape {
 
 		_defaultMaterial = _physics->createMaterial(0.5f, 0.5f, 0.6f);
 
-		// Ground plane with normal pointing down (matching Y-down coordinate system)
-		_groundPlane = PxCreatePlane(*_physics, PxPlane(0, -1, 0, 0), *_defaultMaterial);
+		_groundPlane = PxCreatePlane(*_physics, PxPlane(0, 1, 0, 0), *_defaultMaterial);
 		_scene->addActor(*_groundPlane);
 		_groundPlane->getShapes(&_groundShape, 1);
 	}

@@ -1,4 +1,5 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : require
 
 layout (location = 0) in vec3 fragColor;
 layout (location = 1) in vec3 fragPosWorld;
@@ -21,7 +22,7 @@ layout(set = 0, binding = 0) uniform GlobalUbo{
   int numLights;
 } ubo;
 
-layout(set = 0, binding = 1) uniform sampler2D textures[8];
+layout(set = 0, binding = 1) uniform sampler2D textures[];
 
 layout(push_constant) uniform Push{
 	mat4 modelMatrix;
@@ -53,9 +54,8 @@ void main(){
 		blindTerm = clamp(blindTerm, 0, 1);
 		blindTerm = pow(blindTerm, 512.0);
 		specularLight += intensity * blindTerm;
-	} 
+	}
 
-	vec3 textured = fragColor * texture(textures[push.imgIndex], fragTexCoord).rgb;
-
+	vec3 textured = fragColor * texture(textures[nonuniformEXT(push.imgIndex)], fragTexCoord).rgb;
     outColor = vec4(diffuseLight * textured + specularLight * textured, 1.0);
 }

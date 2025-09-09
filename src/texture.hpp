@@ -1,6 +1,7 @@
 #pragma once
 
 #include "buffer.hpp"
+#include <glm/glm.hpp>
 
 namespace grape {
 
@@ -28,14 +29,17 @@ namespace grape {
 
 		void createTextureImageView();
 
+
 		VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
 
 		void createTextureSampler();
 
+		void createTextureFromColor(const glm::vec4& color);
+
 		void cleanup();
 
-		VkImageView getTextureImageView() { return textureImageView; }
-		VkSampler getTextureSampler() { return textureSampler; }
+		VkImageView getTextureImageView() const { return textureImageView; }
+		VkSampler getTextureSampler() const { return textureSampler; }
 
 	private:
 

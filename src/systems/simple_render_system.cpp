@@ -76,25 +76,35 @@ namespace grape {
 		for (auto& kv : frameInfo.gameObjects) {
 			auto& obj = kv.second;
 
-			if (obj.pointLight != nullptr) {
-				continue;
-			}
-			
+			if (obj.model == nullptr) continue;
+
+			// Push constants for the entire object
 			SimplePushConstantData push{};
 			push.modelMatrix = obj.transform.mat4();
 			push.normalMatrix = obj.transform.normalMatrix();
-			push.imgIndex = obj.imgIndex;
 
-			vkCmdPushConstants(
-				frameInfo.commandBuffer,
-				pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(SimplePushConstantData),
-				&push
-			);
-			obj.model->bind(frameInfo.commandBuffer);
-			obj.model->draw(frameInfo.commandBuffer);
+			// New rendering loop
+			for (size_t i = 0; i < obj.model->getSubmeshes().size(); ++i) {
+				const auto& submesh = obj.model->getSubmeshes()[i];
+
+				// Get the texture index for this submesh
+				push.imgIndex = submesh.materialId;
+
+				// Bind the per-submesh data
+				obj.model->bindSubmesh(frameInfo.commandBuffer, i); // This should be updated to bind the submesh buffers
+
+				// Bind the correct texture
+				vkCmdPushConstants(
+					frameInfo.commandBuffer,
+					pipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0,
+					sizeof(SimplePushConstantData),
+					&push);
+
+				// Draw the submesh
+				obj.model->drawSubmesh(frameInfo.commandBuffer, i);
+			}
 		}
 	}
 }

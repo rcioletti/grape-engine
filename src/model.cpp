@@ -1,12 +1,9 @@
 #include "model.hpp"
-
 #include "utils.hpp"
-
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
-
 #include <cassert>
 #include <cstring>
 #include <unordered_map>
@@ -18,118 +15,27 @@
 namespace std {
 	template <>
 	struct hash<grape::Model::Vertex> {
-
-		size_t operator()(grape::Model::Vertex const& vertex)  const {
+		size_t operator()(grape::Model::Vertex const& vertex) const {
 			size_t seed = 0;
 			grape::hashCombine(seed, vertex.position, vertex.color, vertex.normal, vertex.uv);
-
 			return seed;
 		}
 	};
 }
 
 namespace grape {
-
-	Model::Model(Device& device, const Model::Builder &builder) : grapeDevice{device}
-	{
-		createVertexBuffers(builder.vertices);
-		createIndexBuffers(builder.indices);
+	// --- Model Class Implementation ---
+	Model::Model(Device& device, Builder& builder) : grapeDevice{ device } {
+		submeshes = std::move(builder.submeshes);
+		texturePaths = std::move(builder.texturePaths);
 	}
 
-	Model::~Model(){}
+	Model::~Model() {}
 
-	void Model::draw(VkCommandBuffer commandBuffer)
-	{
-		if (hasIndexBuffer) {
-
-			vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
-		}
-		else {
-
-			vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
-		}
-	}
-
-	std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filepath)
-	{
+	std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filepath) {
 		Builder builder;
-		builder.loadModel(ENGINE_DIR + filepath);
-
+		builder.loadModel(device, ENGINE_DIR + filepath);
 		return std::make_unique<Model>(device, builder);
-	}
-
-	void Model::bind(VkCommandBuffer commandBuffer)
-	{
-		VkBuffer buffers[] = {vertexBuffer->getBuffer()};
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-
-		if (hasIndexBuffer) {
-			vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-		}
-	}
-
-	void Model::createVertexBuffers(const std::vector<Vertex>& vertices)
-	{
-		vertexCount = static_cast<uint32_t>(vertices.size());
-		assert(vertexCount >= 3 && "Vertex count must be at least 3");
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
-		uint32_t vertexSize = sizeof(vertices[0]);
-		
-		Buffer stagingBuffer{
-			grapeDevice,
-			vertexSize,
-			vertexCount,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		};
-		
-		stagingBuffer.map();
-		stagingBuffer.writeToBuffer((void*)vertices.data());
-
-		vertexBuffer = std::make_unique<Buffer>(
-			grapeDevice,
-			vertexSize,
-			vertexCount,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-		);
-
-		grapeDevice.copyBuffer(stagingBuffer.getBuffer(), vertexBuffer->getBuffer(), bufferSize);
-	}
-
-	void Model::createIndexBuffers(const std::vector<uint32_t>& indices)
-	{
-		indexCount = static_cast<uint32_t>(indices.size());
-		hasIndexBuffer = indexCount > 0;
-		
-		if (!hasIndexBuffer) {
-			return;
-		}
-
-		VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
-		uint32_t indexSize = sizeof(indices[0]);
-
-		Buffer stagingBuffer{
-			grapeDevice,
-			indexSize,
-			indexCount,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-		};
-
-		stagingBuffer.map();
-		stagingBuffer.writeToBuffer((void*)indices.data());
-
-		indexBuffer = std::make_unique<Buffer>(
-			grapeDevice,
-			indexSize,
-			indexCount,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-		);
-
-		grapeDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 	}
 
 	std::vector<VkVertexInputBindingDescription> Model::Vertex::getBindingDescriptions()
@@ -152,40 +58,82 @@ namespace grape {
 
 		return attributeDescriptions;
 	}
-	void Model::Builder::loadModel(const std::string& filepath)
-	{
+
+	// The previous draw and bind functions are now removed,
+	// as they are handled by the submesh-specific functions.
+
+	void Model::drawSubmesh(VkCommandBuffer commandBuffer, uint32_t submeshIndex) {
+		assert(submeshIndex < submeshes.size() && "Submesh index out of bounds");
+		const auto& submesh = submeshes[submeshIndex];
+		if (submesh.indexCount > 0) {
+			vkCmdDrawIndexed(commandBuffer, submesh.indexCount, 1, 0, 0, 0);
+		}
+	}
+
+	void Model::bindSubmesh(VkCommandBuffer commandBuffer, uint32_t submeshIndex) {
+		assert(submeshIndex < submeshes.size() && "Submesh index out of bounds");
+		const auto& submesh = submeshes[submeshIndex];
+		VkBuffer buffers[] = { submesh.vertexBuffer->getBuffer() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+		if (submesh.indexBuffer) {
+			vkCmdBindIndexBuffer(commandBuffer, submesh.indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		}
+	}
+
+	// --- Builder Class Implementation ---
+	void Model::Builder::loadModel(Device& device, const std::string& filepath) {
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
 		std::string warn, err;
 
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str())) {
+		std::string baseDir = filepath.substr(0, filepath.find_last_of('/') + 1);
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), baseDir.c_str())) {
 			throw std::runtime_error(warn + err);
 		}
 
-		vertices.clear();
-		indices.clear();
+		// Step 1: Store texture paths from materials
+		texturePaths.clear();
+		for (const auto& mat : materials) {
+			if (!mat.diffuse_texname.empty()) {
+				texturePaths.push_back(mat.diffuse_texname);
+			}
+			else {
+				texturePaths.push_back(""); // Placeholder for materials without a texture
+			}
+		}
 
-		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
+		// Step 2: Iterate through shapes to build sub-meshes
 		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				Vertex vertex{};
+			std::map<int, std::unordered_map<Vertex, uint32_t>> materialUniqueVertices;
+			std::map<int, std::vector<uint32_t>> materialIndices;
 
+			for (size_t i = 0; i < shape.mesh.indices.size(); ++i) {
+				const auto& index = shape.mesh.indices[i];
+				int material_id = shape.mesh.material_ids[i / 3];
+
+				if (materialUniqueVertices.find(material_id) == materialUniqueVertices.end()) {
+					materialUniqueVertices[material_id] = {};
+					materialIndices[material_id] = {};
+				}
+
+				Vertex vertex{};
 				if (index.vertex_index >= 0) {
 					vertex.position = {
 						attrib.vertices[3 * index.vertex_index + 0],
-						attrib.vertices[3 * index.vertex_index + 1],
+						-attrib.vertices[3 * index.vertex_index + 1],
 						attrib.vertices[3 * index.vertex_index + 2],
 					};
-
-					vertex.color = {
-						attrib.colors[3 * index.vertex_index + 0],
-						attrib.colors[3 * index.vertex_index + 1],
-						attrib.colors[3 * index.vertex_index + 2],
-					};
+					// tinyobjloader does not guarantee colors exist, check the size
+					if (attrib.colors.size() > 3 * index.vertex_index) {
+						vertex.color = {
+						   attrib.colors[3 * index.vertex_index + 0],
+						   attrib.colors[3 * index.vertex_index + 1],
+						   attrib.colors[3 * index.vertex_index + 2],
+						};
+					}
 				}
-
 				if (index.normal_index >= 0) {
 					vertex.normal = {
 						attrib.normals[3 * index.normal_index + 0],
@@ -193,7 +141,6 @@ namespace grape {
 						attrib.normals[3 * index.normal_index + 2],
 					};
 				}
-
 				if (index.texcoord_index >= 0) {
 					vertex.uv = {
 						attrib.texcoords[2 * index.texcoord_index + 0],
@@ -201,13 +148,82 @@ namespace grape {
 					};
 				}
 
-				if (uniqueVertices.count(vertex) == 0) {
-					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-					vertices.push_back(vertex);
+				if (materialUniqueVertices.at(material_id).count(vertex) == 0) {
+					materialUniqueVertices.at(material_id)[vertex] = static_cast<uint32_t>(materialUniqueVertices.at(material_id).size());
 				}
-				
-				indices.push_back(uniqueVertices[vertex]);
+				materialIndices.at(material_id).push_back(materialUniqueVertices.at(material_id)[vertex]);
+			}
+
+			// Step 3: Create sub-meshes and their Vulkan buffers
+			for (auto const& [material_id, unique_vertices_map] : materialUniqueVertices) {
+				Submesh submesh{};
+				submesh.materialId = material_id;
+				submesh.indexCount = materialIndices.at(material_id).size();
+
+				std::vector<Vertex> submeshVertices(unique_vertices_map.size());
+				for (auto const& [vertex, index] : unique_vertices_map) {
+					submeshVertices[index] = vertex;
+				}
+
+				createVertexBuffers(device, submesh.vertexBuffer, submeshVertices);
+				createIndexBuffers(device, submesh.indexBuffer, materialIndices.at(material_id));
+				submeshes.push_back(std::move(submesh));
 			}
 		}
+	}
+
+	// --- Builder Helper Functions ---
+	void Model::Builder::createVertexBuffers(Device& device, std::unique_ptr<Buffer>& buffer, const std::vector<Vertex>& vertices) {
+		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+		uint32_t vertexSize = sizeof(vertices[0]);
+
+		Buffer stagingBuffer{
+			device,
+			vertexSize,
+			static_cast<uint32_t>(vertices.size()),
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		};
+
+		stagingBuffer.map();
+		stagingBuffer.writeToBuffer((void*)vertices.data());
+
+		buffer = std::make_unique<Buffer>(
+			device,
+			vertexSize,
+			static_cast<uint32_t>(vertices.size()),
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
+		device.copyBuffer(stagingBuffer.getBuffer(), buffer->getBuffer(), bufferSize);
+	}
+
+	void Model::Builder::createIndexBuffers(Device& device, std::unique_ptr<Buffer>& buffer, const std::vector<uint32_t>& indices) {
+		if (indices.empty()) {
+			return;
+		}
+
+		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+		uint32_t indexSize = sizeof(indices[0]);
+
+		Buffer stagingBuffer{
+			device,
+			indexSize,
+			static_cast<uint32_t>(indices.size()),
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		};
+
+		stagingBuffer.map();
+		stagingBuffer.writeToBuffer((void*)indices.data());
+
+		buffer = std::make_unique<Buffer>(
+			device,
+			indexSize,
+			static_cast<uint32_t>(indices.size()),
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
+		device.copyBuffer(stagingBuffer.getBuffer(), buffer->getBuffer(), bufferSize);
 	}
 }

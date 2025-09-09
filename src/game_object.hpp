@@ -1,4 +1,3 @@
-// Enhanced game_object.hpp with physics integration
 #pragma once
 #include "model.hpp"
 #include "physics.hpp"
@@ -25,15 +24,18 @@ namespace grape {
         }
 
         glm::mat3 normalMatrix() const {
-            glm::mat4 model = mat4();
-            return glm::mat3(glm::transpose(glm::inverse(model)));
+            // For uniform scaling, you can use this optimization
+            return glm::mat3(mat4());
         }
 
         PxTransform toPxTransform() const {
-            // Convert from Y-down (your system) to Y-up (PhysX)
+            // Rotation by 180 degrees around the X-axis to convert Y-down to Y-up
+            glm::quat yFlipRotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            glm::quat convertedRotation = rotation * yFlipRotation;
+
             return PxTransform(
                 PxVec3(translation.x, -translation.y, translation.z),
-                PxQuat(rotation.x, rotation.y, rotation.z, rotation.w)
+                PxQuat(convertedRotation.x, convertedRotation.y, convertedRotation.z, convertedRotation.w)
             );
         }
 
@@ -42,7 +44,9 @@ namespace grape {
             if (!actor) return;
 
             PxTransform pxTransform = actor->getGlobalPose();
-            translation = glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z);
+            // The PhysX y coordinate is your rendering system's -y
+            translation = glm::vec3(pxTransform.p.x, -pxTransform.p.y, pxTransform.p.z);
+            // Your quaternion conversion fix should also be here.
             rotation = glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z);
         }
 
@@ -167,9 +171,9 @@ namespace grape {
         bool hasPhysics() const { return physicsComponent != nullptr; }
 
         // Public members
+        std::string name; // <-- Add this line
         glm::vec3 color{ 1.f, 1.f, 1.f };
         TransformComponent transform{};
-        int imgIndex = 0;
         std::shared_ptr<Model> model{};
         std::unique_ptr<PointLightComponent> pointLight = nullptr;
         std::unique_ptr<PhysicsComponent> physicsComponent = nullptr;

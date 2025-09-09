@@ -20,25 +20,44 @@ namespace grape {
                 VkDescriptorType descriptorType,
                 VkShaderStageFlags stageFlags,
                 uint32_t count = 1);
+
+            Builder& addBinding(
+                uint32_t binding,
+                VkDescriptorType descriptorType,
+                VkShaderStageFlags stageFlags,
+                VkDescriptorBindingFlagsEXT flags,
+                uint32_t count = 1);
+
+            Builder& setDescriptorBindingFlags(VkDescriptorBindingFlagsEXT flags);
+
             std::unique_ptr<DescriptorSetLayout> build() const;
 
         private:
             Device& grapeDevice;
             std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings{};
+            std::unordered_map<uint32_t, VkDescriptorBindingFlagsEXT> perBindingFlags{};
+            VkDescriptorBindingFlagsEXT globalBindingFlags = 0;
         };
 
         DescriptorSetLayout(
-            Device& grapeDevice, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+            Device& grapeDevice,
+            const VkDescriptorSetLayoutCreateInfo& createInfo,
+            std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings,
+            std::unordered_map<uint32_t, VkDescriptorBindingFlagsEXT> bindingFlags);
         ~DescriptorSetLayout();
         DescriptorSetLayout(const DescriptorSetLayout&) = delete;
         DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
 
         VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }
 
+        bool hasVariableDescriptorCount() const;
+        uint32_t getVariableDescriptorBinding() const;
+
     private:
         Device& grapeDevice;
         VkDescriptorSetLayout descriptorSetLayout;
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings;
+        std::unordered_map<uint32_t, VkDescriptorBindingFlagsEXT> bindingFlags;
 
         friend class DescriptorWriter;
     };
@@ -71,7 +90,9 @@ namespace grape {
         DescriptorPool& operator=(const DescriptorPool&) = delete;
 
         bool allocateDescriptor(
-            const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const;
+            const VkDescriptorSetLayout descriptorSetLayout,
+            VkDescriptorSet& descriptor,
+            uint32_t variableDescriptorCount = 0) const;
 
         void freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const;
 
@@ -92,9 +113,9 @@ namespace grape {
 
         DescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
         DescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
-        DescriptorWriter& writeImages(uint32_t binding, VkDescriptorImageInfo imageInfo[]);
+        DescriptorWriter& writeImages(uint32_t binding, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfos);
 
-        bool build(VkDescriptorSet& set);
+        bool build(VkDescriptorSet& set, uint32_t variableDescriptorCount = 0);
         void overwrite(VkDescriptorSet& set);
 
     private:

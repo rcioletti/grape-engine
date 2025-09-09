@@ -151,16 +151,35 @@ namespace grape {
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
+        // Step 1: Get the device features and chain them correctly
+        // Start with VkPhysicalDeviceFeatures2 as the head of the pNext chain
+        VkPhysicalDeviceFeatures2 deviceFeatures2{};
+        deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
+        // Chain the necessary features. This links the descriptor indexing features
+        // to the main features struct.
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+        deviceFeatures2.pNext = &descriptorIndexingFeatures;
+
+        // Now, get the features from the physical device. The pNext chain will be populated.
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures2);
+
+        // Step 2: Set up the logical device creation info
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+        // The pNext chain is now correctly set up to include the features we need.
+        // This is the modern way to do it.
+        createInfo.pNext = &deviceFeatures2;
+
+        // As per the Vulkan specification, if pNext is used to specify features,
+        // pEnabledFeatures must be NULL. This fixes a validation layer error.
+        createInfo.pEnabledFeatures = nullptr;
 
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-        createInfo.pEnabledFeatures = &deviceFeatures;
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
@@ -211,6 +230,20 @@ namespace grape {
 
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+        // Check for required descriptor indexing features
+        VkPhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{};
+        descriptorIndexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+
+        VkPhysicalDeviceFeatures2 features2{};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &descriptorIndexingFeatures;
+
+        vkGetPhysicalDeviceFeatures2(device, &features2);
+
+        bool descriptorIndexingSupported = descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
+            descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
+            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount;
 
         return indices.isComplete() && extensionsSupported && swapChainAdequate &&
             supportedFeatures.samplerAnisotropy;

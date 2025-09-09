@@ -13,7 +13,7 @@ namespace grape {
 
 	public:
 
-		Renderer(Window &window, Device &device);
+		Renderer(Window& window, Device& device);
 		~Renderer();
 
 		Renderer(const Renderer&) = delete;
@@ -23,14 +23,16 @@ namespace grape {
 		float getAspectRatio() const { return grapeSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
+		// Corrected to use currentFrame consistently
 		VkCommandBuffer getCurrentCommandBuffer() const {
 			assert(isFrameStarted && "Cannot get command buffer when frame not in progress");
-			return commandBuffers[currentFrameIndex];
+			return commandBuffers[currentFrame];
 		}
 
+		// Corrected to use currentFrame consistently
 		int getFrameIndex() const {
 			assert(isFrameStarted && "Cannot get frame index when frame not in progress");
-			return currentFrameIndex;
+			return currentFrame;
 		}
 
 		VkCommandBuffer beginFrame();
@@ -39,21 +41,27 @@ namespace grape {
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void beginOffscreenRenderPass(VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, VkRenderPass renderPass, VkExtent2D extent);
 		void endOffscreenRenderPass(VkCommandBuffer commandBuffer);
-		VkImageView getSwapChainImageView(int index) {return grapeSwapChain->getImageView(index);}
+		VkImageView getSwapChainImageView(int index) { return grapeSwapChain->getImageView(index); }
 		size_t getSwapChainImageCount() { return grapeSwapChain->imageCount(); }
 
 	private:
 		void createCommandBuffers();
 		void freeCommandBuffers();
 		void recreateSwapChain();
+		void createSyncObjects();
 
-		Window &grapeWindow;
-		Device &grapeDevice;
+		Window& grapeWindow;
+		Device& grapeDevice;
 		std::unique_ptr<SwapChain> grapeSwapChain;
 		std::vector<VkCommandBuffer> commandBuffers;
 
-		uint32_t currentImageIndex;
-		int currentFrameIndex;
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
+		std::vector<VkFence> imagesInFlight; // to track which image is being rendered
+		size_t currentFrame = 0; // The primary frame index
+
+		uint32_t currentImageIndex = 0;
 		bool isFrameStarted = false;
 	};
 }

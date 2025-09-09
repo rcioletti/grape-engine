@@ -3,68 +3,59 @@
 #include <iostream>
 
 namespace grape {
-	void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, GameObject& gameObject)
-	{
-		glm::vec3 rotate{ 0 };
+    void KeyboardMovementController::moveInPlaneXZ(GLFWwindow* window, float dt, GameObject& gameObject) {
+        glm::vec3 rotate{ 0 };
 
-		if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
-		if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS) rotate.y -= 1.f;
-		if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
-		if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
+        // Keyboard rotation
+        if (glfwGetKey(window, keys.lookRight) == GLFW_PRESS) rotate.y += 1.f;
+        if (glfwGetKey(window, keys.lookLeft) == GLFW_PRESS) rotate.y -= 1.f;
+        if (glfwGetKey(window, keys.lookUp) == GLFW_PRESS) rotate.x += 1.f;
+        if (glfwGetKey(window, keys.lookDown) == GLFW_PRESS) rotate.x -= 1.f;
 
-		if (glfwGetMouseButton(window, keys.rotateCamera) == GLFW_PRESS) {
+        // Increase this value to make arrow key rotation faster
+        float keyboardLookSpeed = 100.f; // Adjust this value
+        rotate *= keyboardLookSpeed;
 
-			if (!canRotate) {
-				glfwGetCursorPos(window, &initialXpos, &initialYpos);
-			}
+        // Mouse rotation
+        if (glfwGetMouseButton(window, keys.rotateCamera) == GLFW_PRESS) {
+            if (!canRotate) {
+                glfwGetCursorPos(window, &lastXpos, &lastYpos);
+            }
+            canRotate = true;
 
-			canRotate = true;
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
 
-			double xpos, ypos;
-			int width, height;
-			glfwGetCursorPos(window, &xpos, &ypos);
-			glfwGetWindowSize(window, &width, &height);
+            rotate.y -= static_cast<float>(xpos - lastXpos) * lookSpeed;
+            rotate.x += static_cast<float>(ypos - lastYpos) * lookSpeed;
 
-			if (lastXpos != xpos) {
-				rotate.y -= static_cast<uint32_t>(initialXpos - xpos);
-				lastXpos = xpos;
-			}
+            lastXpos = xpos;
+            lastYpos = ypos;
+        }
+        else {
+            canRotate = false;
+        }
 
-			if (lastYpos != ypos) {
-				rotate.x += static_cast<uint32_t>(initialYpos - ypos);
-				lastYpos = ypos;
-			}
-		}
+        if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
+            glm::quat delta_rotation = glm::quat(glm::radians(rotate * dt));
+            gameObject.transform.rotation = gameObject.transform.rotation * delta_rotation;
+        }
 
-		if (glfwGetMouseButton(window, keys.rotateCamera) == GLFW_RELEASE) {
-			canRotate = false;
-		};
+        // Rest of the movement code is the same
+        const glm::vec3 rightDir = gameObject.transform.rotation * glm::vec3(1.0f, 0.0f, 0.0f);
+        const glm::vec3 upDir = gameObject.transform.rotation * glm::vec3(0.0f, 1.0f, 0.0f);
+        const glm::vec3 fowardDir = gameObject.transform.rotation * glm::vec3(0.0f, 0.0f, 1.0f);
 
-		if (glm::dot(rotate, rotate) > std::numeric_limits<float>::epsilon()) {
-			glm::vec3 euler = glm::eulerAngles(gameObject.transform.rotation);
-			euler += lookSpeed * dt * glm::normalize(rotate);
-			// clamp pitch (x)
-			euler.x = glm::clamp(euler.x, -1.5f, 1.5f);
-			// wrap yaw (y)
-			euler.y = glm::mod(euler.y, glm::two_pi<float>());
-			gameObject.transform.rotation = glm::quat(euler);
-		}
+        glm::vec3 moveDir{ 0.f };
+        if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS) moveDir += fowardDir;
+        if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS) moveDir -= fowardDir;
+        if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS) moveDir += rightDir;
+        if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
+        if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
+        if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
 
-		float yaw = glm::eulerAngles(gameObject.transform.rotation).y;
-		const glm::vec3 fowardDir{ sin(yaw), 0.f, cos(yaw) };
-		const glm::vec3 rightDir{ fowardDir.z, 0.f, -fowardDir.x };
-		const glm::vec3 upDir{ 0.f, -1.f, 0.f };
-
-		glm::vec3 moveDir{ 0.f };
-		if (glfwGetKey(window, keys.moveForward) == GLFW_PRESS) moveDir += fowardDir;
-		if (glfwGetKey(window, keys.moveBackward) == GLFW_PRESS) moveDir -= fowardDir;
-		if (glfwGetKey(window, keys.moveRight) == GLFW_PRESS) moveDir += rightDir;
-		if (glfwGetKey(window, keys.moveLeft) == GLFW_PRESS) moveDir -= rightDir;
-		if (glfwGetKey(window, keys.moveUp) == GLFW_PRESS) moveDir += upDir;
-		if (glfwGetKey(window, keys.moveDown) == GLFW_PRESS) moveDir -= upDir;
-
-		if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
-			gameObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
-		}
-	}
+        if (glm::dot(moveDir, moveDir) > std::numeric_limits<float>::epsilon()) {
+            gameObject.transform.translation += moveSpeed * dt * glm::normalize(moveDir);
+        }
+    }
 }

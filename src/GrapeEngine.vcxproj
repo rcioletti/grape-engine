@@ -209,6 +209,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="descriptors.hpp" />
     <ClInclude Include="device.hpp" />
     <ClInclude Include="frame_info.hpp" />
+    <ClInclude Include="game_loop.hpp" />
     <ClInclude Include="game_object.hpp" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
