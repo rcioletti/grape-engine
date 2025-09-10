@@ -24,10 +24,11 @@ layout(set = 0, binding = 0) uniform GlobalUbo{
   int numLights;
 } ubo;
 
-
+// FIXED: Add imgIndex to match your C++ struct
 layout(push_constant) uniform Push{
 	mat4 modelMatrix;
 	mat4 normalMatrix;
+	int imgIndex;  // Add this line!
 } push;
 
 void main(){

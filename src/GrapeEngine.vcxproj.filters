@@ -111,6 +111,9 @@
     <ClCompile Include="viewport_renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="game_object_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="keyboard_movement_controller.hpp">
@@ -201,6 +204,9 @@
       <Filter>Header Files\systems</Filter>
     </ClInclude>
     <ClInclude Include="game_loop.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game_object_loader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

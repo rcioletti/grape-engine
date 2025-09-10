@@ -13,8 +13,8 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids-Plate.png
-map_d /Asteroids-Plate.png
+map_Kd Asteroids-Plate.png
+map_d Asteroids-Plate.png
 
 newmtl Back_Bezel_Rocks
 Ks 0.500000 0.500000 0.500000
@@ -28,8 +28,8 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids-New-Paper-Bezel-In.png
-map_d /Asteroids-New-Paper-Bezel-In.png
+map_Kd Asteroids-New-Paper-Bezel-In.png
+map_d Asteroids-New-Paper-Bezel-In.png
 
 newmtl Bezel_Art
 Ks 0.500000 0.500000 0.500000
@@ -43,8 +43,8 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids_BezelBorder.png
-map_d /Asteroids_BezelBorder.png
+map_Kd Asteroids_BezelBorder.png
+map_d Asteroids_BezelBorder.png
 
 newmtl Black_Paint
 Kd 0.010960 0.010330 0.008568
@@ -89,7 +89,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Arcade Coin Door.png
+map_Kd Arcade Coin Door.png
 
 newmtl Coin_Light
 Ks 0.500000 0.500000 0.500000
@@ -104,7 +104,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Arcade Coin Door.png
+map_Kd Arcade Coin Door.png
 
 newmtl Control_Panel_Decal
 Ks 0.500000 0.500000 0.500000
@@ -119,7 +119,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids-CP-New.png
+map_Kd Asteroids-CP-New.png
 
 newmtl Front_Bezel_Rocks
 Ks 0.500000 0.500000 0.500000
@@ -133,8 +133,8 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids-New-Paper-Bezel-Out.png
-map_d /Asteroids-New-Paper-Bezel-Out.png
+map_Kd Asteroids-New-Paper-Bezel-Out.png
+map_d Asteroids-New-Paper-Bezel-Out.png
 
 newmtl Full_Black
 Kd 0.000000 0.000000 0.000000
@@ -174,7 +174,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd -o 0.005 0 0 /Asteroids-Side-Decal.png
+map_Kd -o 0.005 0 0 Asteroids-Side-Decal.png
 
 newmtl Marquee
 Ks 0.500000 0.500000 0.500000
@@ -189,7 +189,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids-Marquee.png
+map_Kd Asteroids-Marquee.png
 
 newmtl Red_Light
 Kd 1.000024 0.005605 0.010330
@@ -219,7 +219,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd -o 0.005 0 0 /Asteroids-Side-Decal.png
+map_Kd -o 0.005 0 0 Asteroids-Side-Decal.png
 
 newmtl Video_Image
 Ks 0.500000 0.500000 0.500000
@@ -234,7 +234,7 @@ Pc 0.000000
 Pcr 0.030000
 aniso 0.000000
 anisor 0.000000
-map_Kd /Asteroids-CRT.png
+map_Kd Asteroids-CRT.png
 
 newmtl White_Plastic
 Kd 0.800000 0.800000 0.800000

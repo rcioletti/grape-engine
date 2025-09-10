@@ -9,6 +9,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <map>
 
 namespace grape {
     class Model {
@@ -39,6 +40,10 @@ namespace grape {
             void loadModel(Device& device, const std::string& filepath);
             std::vector<Submesh> submeshes;
             std::vector<std::string> texturePaths;
+            std::map<int, std::string> materialIdToTexturePath;
+
+            glm::vec3 boundingBoxMin = glm::vec3(0.0f);
+            glm::vec3 boundingBoxMax = glm::vec3(0.0f);
 
         private:
             void createVertexBuffers(Device& device, std::unique_ptr<Buffer>& buffer, const std::vector<Vertex>& vertices);
@@ -56,13 +61,34 @@ namespace grape {
         // Public accessors for sub-meshes and texture paths
         const std::vector<Submesh>& getSubmeshes() const { return submeshes; }
         const std::vector<std::string>& getTexturePaths() const { return texturePaths; }
+        const std::map<int, std::string>& getMaterialTextureMapping() const {
+            return materialIdToTexturePath;
+        }
+        size_t getSubmeshCount() const { return submeshes.size(); }
+
+        int getSubmeshMaterialId(uint32_t submeshIndex) const {
+            assert(submeshIndex < submeshes.size() && "Submesh index out of bounds");
+            return submeshes[submeshIndex].materialId;
+        }
+
+        std::string getTexturePathForMaterial(int materialId) const {
+            // This would require storing the material-to-texture mapping in the Model class
+            // For now, you might need to modify your design slightly
+            return "";
+        }
 
         void drawSubmesh(VkCommandBuffer commandBuffer, uint32_t submeshIndex);
         void bindSubmesh(VkCommandBuffer commandBuffer, uint32_t submeshIndex);
+
+        void getBoundingBox(glm::vec3& min, glm::vec3& max) const;
 
     private:
         Device& grapeDevice;
         std::vector<Submesh> submeshes;
         std::vector<std::string> texturePaths;
+        std::map<int, std::string> materialIdToTexturePath;
+
+        glm::vec3 boundingBoxMin = glm::vec3(0.0f);
+        glm::vec3 boundingBoxMax = glm::vec3(0.0f);
     };
 }

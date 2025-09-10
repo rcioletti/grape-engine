@@ -61,7 +61,7 @@ namespace grape {
 
 		_defaultMaterial = _physics->createMaterial(0.5f, 0.5f, 0.6f);
 
-		_groundPlane = PxCreatePlane(*_physics, PxPlane(0, 1, 0, 0), *_defaultMaterial);
+		_groundPlane = PxCreatePlane(*_physics, PxPlane(0, 1, 0, 1), *_defaultMaterial);
 		_scene->addActor(*_groundPlane);
 		_groundPlane->getShapes(&_groundShape, 1);
 	}

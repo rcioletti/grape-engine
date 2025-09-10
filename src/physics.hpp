@@ -7,6 +7,7 @@
 using namespace physx;
 
 namespace grape {
+
 	class Physics {
 
 	public:

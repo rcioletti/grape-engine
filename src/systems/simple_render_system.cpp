@@ -60,51 +60,66 @@ namespace grape {
 		grapePipeline = std::make_unique<Pipeline>(grapeDevice, "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv", pipelineConfig);
 	}
 
-	void SimpleRenderSystem::renderGameObjects(FrameInfo &frameInfo)
-	{
-		grapePipeline->bind(frameInfo.commandBuffer);
+    void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
+    {
+        grapePipeline->bind(frameInfo.commandBuffer);
+        vkCmdBindDescriptorSets(
+            frameInfo.commandBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout,
+            0, 1,
+            &frameInfo.globalDescriptorSet,
+            0, nullptr
+        );
 
-		vkCmdBindDescriptorSets(
-			frameInfo.commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			pipelineLayout,
-			0, 1,
-			&frameInfo.globalDescriptorSet,
-			0, nullptr
-		);
+        for (auto& kv : frameInfo.gameObjects) {
+            auto& obj = kv.second;
+            if (obj.model == nullptr) continue;
 
-		for (auto& kv : frameInfo.gameObjects) {
-			auto& obj = kv.second;
+            // Push constants for the entire object (common data)
+            SimplePushConstantData push{};
+            push.modelMatrix = obj.transform.mat4();
+            push.normalMatrix = obj.transform.normalMatrix();
 
-			if (obj.model == nullptr) continue;
+            // Get the texture paths from the model
+            const auto& modelTexturePaths = obj.model->getTexturePaths();
 
-			// Push constants for the entire object
-			SimplePushConstantData push{};
-			push.modelMatrix = obj.transform.mat4();
-			push.normalMatrix = obj.transform.normalMatrix();
+            // Render each submesh with its corresponding texture
+            for (size_t i = 0; i < obj.model->getSubmeshes().size(); ++i) {
+                const auto& submesh = obj.model->getSubmeshes()[i];
 
-			// New rendering loop
-			for (size_t i = 0; i < obj.model->getSubmeshes().size(); ++i) {
-				const auto& submesh = obj.model->getSubmeshes()[i];
+                // Find the correct texture index for this material
+                int textureIndex = 0; // Default fallback texture
 
-				// Get the texture index for this submesh
-				push.imgIndex = submesh.materialId;
+                if (submesh.materialId >= 0 && submesh.materialId < modelTexturePaths.size()) {
+                    const std::string& texturePath = modelTexturePaths[submesh.materialId];
 
-				// Bind the per-submesh data
-				obj.model->bindSubmesh(frameInfo.commandBuffer, i); // This should be updated to bind the submesh buffers
+                    // Use the function from FrameInfo to get the texture index
+                    textureIndex = frameInfo.getTextureIndex(texturePath);
 
-				// Bind the correct texture
-				vkCmdPushConstants(
-					frameInfo.commandBuffer,
-					pipelineLayout,
-					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0,
-					sizeof(SimplePushConstantData),
-					&push);
+#ifdef DEBUG_RENDERING
+                    std::cout << "Rendering submesh " << i << ": materialId=" << submesh.materialId
+                        << ", texture='" << texturePath << "', descriptorIndex=" << textureIndex << std::endl;
+#endif
+                }
 
-				// Draw the submesh
-				obj.model->drawSubmesh(frameInfo.commandBuffer, i);
-			}
-		}
-	}
+                push.imgIndex = textureIndex;
+
+                // Bind vertex and index buffers for this submesh
+                obj.model->bindSubmesh(frameInfo.commandBuffer, i);
+
+                // Push constants for this specific submesh
+                vkCmdPushConstants(
+                    frameInfo.commandBuffer,
+                    pipelineLayout,
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0,
+                    sizeof(SimplePushConstantData),
+                    &push);
+
+                // Draw this submesh
+                obj.model->drawSubmesh(frameInfo.commandBuffer, i);
+            }
+        }
+    }
 }

@@ -47,15 +47,12 @@ namespace grape {
 			.setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
 			.build();
 
-		loadGameObjects();
+		loader.loadGameObjects(grapeDevice, physics, gameObjects);
 	}
 
 	App::~App()
 	{
 		vkDeviceWaitIdle(grapeDevice.device());
-
-		// Cleanup textures from the map
-		loadedTextures.clear(); // This calls the destructors for all unique_ptr<Texture> objects
 
 		// Use UI class for ImGui shutdown
 		UI::shutdown();
@@ -115,33 +112,36 @@ namespace grape {
 		}
 
 		std::unique_ptr<Texture> defaultTexture;
-		if (loadedTextures.empty()) {
+		if (loader.getLoadedTextures().empty()) {
 			defaultTexture = std::make_unique<Texture>(grapeDevice);
 			defaultTexture->createTextureFromColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		}
-		const Texture* fallbackTexture = loadedTextures.empty() ? defaultTexture.get() : loadedTextures.begin()->second.get();
+		const Texture* fallbackTexture = loader.getLoadedTextures().empty() ? defaultTexture.get() : loader.getLoadedTextures().begin()->second.get();
 
 		for (int i = 0; i < globalDescriptorSets.size(); i++) {
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
 			const int MAX_TEXTURES_IN_SET = 20;
 			std::vector<VkDescriptorImageInfo> descriptorInfos(MAX_TEXTURES_IN_SET);
 
-			for (uint32_t j = 0; j < MAX_TEXTURES_IN_SET; j++) {
-				if (j < allUniqueTexturePaths.size()) {
-					const auto& path = allUniqueTexturePaths[j];
-					if (loadedTextures.find(path) != loadedTextures.end()) {
-						const auto& texture = *loadedTextures.at(path);
+			// Always set index 0 to fallback
+			descriptorInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptorInfos[0].sampler = fallbackTexture->getTextureSampler();
+			descriptorInfos[0].imageView = fallbackTexture->getTextureImageView();
+
+			for (uint32_t j = 1; j < MAX_TEXTURES_IN_SET; j++) {
+				if (j-1 < allUniqueTexturePaths.size()) {
+					const auto& path = allUniqueTexturePaths[j-1];
+					if (loader.getLoadedTextures().find(path) != loader.getLoadedTextures().end()) {
+						const auto& texture = *loader.getLoadedTextures().at(path);
 						descriptorInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 						descriptorInfos[j].sampler = texture.getTextureSampler();
 						descriptorInfos[j].imageView = texture.getTextureImageView();
-					}
-					else {
+					} else {
 						descriptorInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 						descriptorInfos[j].sampler = fallbackTexture->getTextureSampler();
 						descriptorInfos[j].imageView = fallbackTexture->getTextureImageView();
 					}
-				}
-				else {
+				} else {
 					descriptorInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 					descriptorInfos[j].sampler = fallbackTexture->getTextureSampler();
 					descriptorInfos[j].imageView = fallbackTexture->getTextureImageView();
@@ -307,7 +307,10 @@ namespace grape {
 					commandBuffer,
 					camera,
 					globalDescriptorSets[frameIndex],
-					gameObjects
+					gameObjects,
+					[this](const std::string& texturePath) -> int {
+						return loader.getTextureDescriptorIndex(texturePath);
+					}
 				};
 
 				GlobalUbo ubo{};
@@ -349,52 +352,5 @@ namespace grape {
 		}
 
 		vkDeviceWaitIdle(grapeDevice.device());
-	}
-
-	void App::loadGameObjects()
-	{
-		std::shared_ptr<Model> marioModel = Model::createModelFromFile(grapeDevice, "models/Asteroids.obj");
-
-		const auto& modelTexturePaths = marioModel->getTexturePaths();
-		for (const auto& path : modelTexturePaths) {
-			if (!path.empty() && loadedTextures.find(path) == loadedTextures.end()) {
-				auto newTexture = std::make_unique<Texture>(grapeDevice);
-				newTexture->createTextureFromFile("textures/" + path);
-
-				loadedTextures.emplace(path, std::move(newTexture));
-			}
-		}
-
-		auto mario = GameObject::createPhysicsObject(physics, glm::vec3(0.f, -5.f, 0.f), true, false);
-		mario.name = "Arcade";
-		mario.model = marioModel;
-		mario.transform.scale = glm::vec3(.5f);
-		mario.transform.rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(1.f, 0.f, 0.f));
-		mario.addBoxCollider(physics, glm::vec3(0.5f, 0.5f, 0.5f));
-		gameObjects.emplace(mario.getId(), std::move(mario));
-
-		std::vector<glm::vec3> lightColors{
-		  {1.f, .1f, .1f},
-		  {.1f, .1f, 1.f},
-		  {.1f, 1.f, .1f},
-		  {1.f, 1.f, .1f},
-		  {.1f, 1.f, 1.f},
-		  {1.f, 1.f, 1.f}
-		};
-
-		for (int i = 0; i < lightColors.size(); i++) {
-			auto pointLight = GameObject::makePointLight(1.2f);
-			pointLight.color = lightColors[i];
-			auto rotateLight = glm::rotate(
-				glm::mat4(1.f), 
-				(i * glm::two_pi<float>()) / lightColors.size(), 
-				{ 0.f, -1.f, 0.f });
-			pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
-			gameObjects.emplace(pointLight.getId(), std::move(pointLight));
-		}
-
-		//TODO: load game objects from map on disk
-		//MapManager mapManager("Main Map", "mainMap.json");
-		//mapManager.loadMap("mainMap.json");
 	}
 }

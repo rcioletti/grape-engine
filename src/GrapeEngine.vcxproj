@@ -180,6 +180,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClCompile Include="descriptors.cpp" />
     <ClCompile Include="device.cpp" />
     <ClCompile Include="game_object.cpp" />
+    <ClCompile Include="game_object_loader.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
@@ -211,6 +212,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="frame_info.hpp" />
     <ClInclude Include="game_loop.hpp" />
     <ClInclude Include="game_object.hpp" />
+    <ClInclude Include="game_object_loader.hpp" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_glfw.h" />

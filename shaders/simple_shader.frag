@@ -31,6 +31,9 @@ layout(push_constant) uniform Push{
 } push;
 
 void main(){
+
+	vec4 texColor = texture(textures[push.imgIndex], fragTexCoord);
+
 	vec3 diffuseLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
 	vec3 specularLight = vec3(0.0);
 	vec3 surfaceNormal = normalize(fragNormalWorld);
@@ -56,6 +59,5 @@ void main(){
 		specularLight += intensity * blindTerm;
 	}
 
-	vec3 textured = fragColor * texture(textures[nonuniformEXT(push.imgIndex)], fragTexCoord).rgb;
-    outColor = vec4(diffuseLight * textured + specularLight * textured, 1.0);
+	outColor = vec4((diffuseLight * texColor.rgb), texColor.a);
 }

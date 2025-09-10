@@ -11,6 +11,7 @@
 #ifndef ENGINE_DIR
 #define ENGINE_DIR "../"
 #endif
+#include <iostream>
 
 namespace std {
 	template <>
@@ -28,9 +29,18 @@ namespace grape {
 	Model::Model(Device& device, Builder& builder) : grapeDevice{ device } {
 		submeshes = std::move(builder.submeshes);
 		texturePaths = std::move(builder.texturePaths);
+		materialIdToTexturePath = std::move(builder.materialIdToTexturePath);
+		// Get bounding box from builder
+		boundingBoxMin = builder.boundingBoxMin;
+		boundingBoxMax = builder.boundingBoxMax;
 	}
 
 	Model::~Model() {}
+
+	void Model::getBoundingBox(glm::vec3& min, glm::vec3& max) const {
+		min = boundingBoxMin;
+		max = boundingBoxMax;
+	}
 
 	std::unique_ptr<Model> Model::createModelFromFile(Device& device, const std::string& filepath) {
 		Builder builder;
@@ -59,9 +69,6 @@ namespace grape {
 		return attributeDescriptions;
 	}
 
-	// The previous draw and bind functions are now removed,
-	// as they are handled by the submesh-specific functions.
-
 	void Model::drawSubmesh(VkCommandBuffer commandBuffer, uint32_t submeshIndex) {
 		assert(submeshIndex < submeshes.size() && "Submesh index out of bounds");
 		const auto& submesh = submeshes[submeshIndex];
@@ -82,95 +89,143 @@ namespace grape {
 	}
 
 	// --- Builder Class Implementation ---
-	void Model::Builder::loadModel(Device& device, const std::string& filepath) {
-		tinyobj::attrib_t attrib;
-		std::vector<tinyobj::shape_t> shapes;
-		std::vector<tinyobj::material_t> materials;
-		std::string warn, err;
+    void Model::Builder::loadModel(Device& device, const std::string& filepath) {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string warn, err;
 
-		std::string baseDir = filepath.substr(0, filepath.find_last_of('/') + 1);
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), baseDir.c_str())) {
-			throw std::runtime_error(warn + err);
-		}
+        std::string baseDir = filepath.substr(0, filepath.find_last_of('/') + 1);
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(), baseDir.c_str())) {
+            throw std::runtime_error(warn + err);
+        }
 
-		// Step 1: Store texture paths from materials
-		texturePaths.clear();
-		for (const auto& mat : materials) {
-			if (!mat.diffuse_texname.empty()) {
-				texturePaths.push_back(mat.diffuse_texname);
-			}
-			else {
-				texturePaths.push_back(""); // Placeholder for materials without a texture
-			}
-		}
+        // Initialize bounding box
+        boundingBoxMin = glm::vec3(FLT_MAX);
+        boundingBoxMax = glm::vec3(-FLT_MAX);
+        bool foundAny = false;
 
-		// Step 2: Iterate through shapes to build sub-meshes
-		for (const auto& shape : shapes) {
-			std::map<int, std::unordered_map<Vertex, uint32_t>> materialUniqueVertices;
-			std::map<int, std::vector<uint32_t>> materialIndices;
+        // Clear previous data
+        texturePaths.clear();
+        materialIdToTexturePath.clear();
 
-			for (size_t i = 0; i < shape.mesh.indices.size(); ++i) {
-				const auto& index = shape.mesh.indices[i];
-				int material_id = shape.mesh.material_ids[i / 3];
+        // Step 1: Create mapping from material ID to texture path
+        for (int i = 0; i < materials.size(); ++i) {
+            const auto& mat = materials[i];
+            if (!mat.diffuse_texname.empty()) {
+                materialIdToTexturePath[i] = mat.diffuse_texname;
+                // Also store in texturePaths for backwards compatibility
+                if (std::find(texturePaths.begin(), texturePaths.end(), mat.diffuse_texname) == texturePaths.end()) {
+                    texturePaths.push_back(mat.diffuse_texname);
+                }
+            }
+            else {
+                materialIdToTexturePath[i] = ""; // No texture for this material
+            }
 
-				if (materialUniqueVertices.find(material_id) == materialUniqueVertices.end()) {
-					materialUniqueVertices[material_id] = {};
-					materialIndices[material_id] = {};
-				}
+            std::cout << "Material " << i << " (" << mat.name << "): "
+                << (mat.diffuse_texname.empty() ? "No texture" : mat.diffuse_texname) << std::endl;
+        }
 
-				Vertex vertex{};
-				if (index.vertex_index >= 0) {
-					vertex.position = {
-						attrib.vertices[3 * index.vertex_index + 0],
-						-attrib.vertices[3 * index.vertex_index + 1],
-						attrib.vertices[3 * index.vertex_index + 2],
-					};
-					// tinyobjloader does not guarantee colors exist, check the size
-					if (attrib.colors.size() > 3 * index.vertex_index) {
-						vertex.color = {
-						   attrib.colors[3 * index.vertex_index + 0],
-						   attrib.colors[3 * index.vertex_index + 1],
-						   attrib.colors[3 * index.vertex_index + 2],
-						};
-					}
-				}
-				if (index.normal_index >= 0) {
-					vertex.normal = {
-						attrib.normals[3 * index.normal_index + 0],
-						attrib.normals[3 * index.normal_index + 1],
-						attrib.normals[3 * index.normal_index + 2],
-					};
-				}
-				if (index.texcoord_index >= 0) {
-					vertex.uv = {
-						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1],
-					};
-				}
+        // Step 2: Iterate through shapes to build sub-meshes
+        for (const auto& shape : shapes) {
+            std::map<int, std::unordered_map<Vertex, uint32_t>> materialUniqueVertices;
+            std::map<int, std::vector<uint32_t>> materialIndices;
 
-				if (materialUniqueVertices.at(material_id).count(vertex) == 0) {
-					materialUniqueVertices.at(material_id)[vertex] = static_cast<uint32_t>(materialUniqueVertices.at(material_id).size());
-				}
-				materialIndices.at(material_id).push_back(materialUniqueVertices.at(material_id)[vertex]);
-			}
+            for (size_t i = 0; i < shape.mesh.indices.size(); ++i) {
+                const auto& index = shape.mesh.indices[i];
+                int material_id = shape.mesh.material_ids[i / 3];
 
-			// Step 3: Create sub-meshes and their Vulkan buffers
-			for (auto const& [material_id, unique_vertices_map] : materialUniqueVertices) {
-				Submesh submesh{};
-				submesh.materialId = material_id;
-				submesh.indexCount = materialIndices.at(material_id).size();
+                if (materialUniqueVertices.find(material_id) == materialUniqueVertices.end()) {
+                    materialUniqueVertices[material_id] = {};
+                    materialIndices[material_id] = {};
+                }
 
-				std::vector<Vertex> submeshVertices(unique_vertices_map.size());
-				for (auto const& [vertex, index] : unique_vertices_map) {
-					submeshVertices[index] = vertex;
-				}
+                Vertex vertex{};
+                if (index.vertex_index >= 0) {
+                    vertex.position = {
+                        attrib.vertices[3 * index.vertex_index + 0],
+                        -attrib.vertices[3 * index.vertex_index + 1],
+                        attrib.vertices[3 * index.vertex_index + 2],
+                    };
 
-				createVertexBuffers(device, submesh.vertexBuffer, submeshVertices);
-				createIndexBuffers(device, submesh.indexBuffer, materialIndices.at(material_id));
-				submeshes.push_back(std::move(submesh));
-			}
-		}
-	}
+                    // Update bounding box with this vertex position
+                    boundingBoxMin = glm::min(boundingBoxMin, vertex.position);
+                    boundingBoxMax = glm::max(boundingBoxMax, vertex.position);
+                    foundAny = true;
+
+                    // tinyobjloader does not guarantee colors exist, check the size
+                    if (attrib.colors.size() > 3 * index.vertex_index) {
+                        vertex.color = {
+                           attrib.colors[3 * index.vertex_index + 0],
+                           attrib.colors[3 * index.vertex_index + 1],
+                           attrib.colors[3 * index.vertex_index + 2],
+                        };
+                    }
+                    else {
+                        vertex.color = { 1.0f, 1.0f, 1.0f }; // Default white color
+                    }
+                }
+                if (index.normal_index >= 0) {
+                    vertex.normal = {
+                        attrib.normals[3 * index.normal_index + 0],
+                        attrib.normals[3 * index.normal_index + 1],
+                        attrib.normals[3 * index.normal_index + 2],
+                    };
+                }
+                if (index.texcoord_index >= 0) {
+                    vertex.uv = {
+                        attrib.texcoords[2 * index.texcoord_index + 0],
+                        attrib.texcoords[2 * index.texcoord_index + 1],
+                    };
+                }
+
+                if (materialUniqueVertices.at(material_id).count(vertex) == 0) {
+                    materialUniqueVertices.at(material_id)[vertex] = static_cast<uint32_t>(materialUniqueVertices.at(material_id).size());
+                }
+                materialIndices.at(material_id).push_back(materialUniqueVertices.at(material_id)[vertex]);
+            }
+
+            // Step 3: Create sub-meshes and their Vulkan buffers
+            for (auto const& [material_id, unique_vertices_map] : materialUniqueVertices) {
+                Submesh submesh{};
+                submesh.materialId = material_id;
+                submesh.indexCount = materialIndices.at(material_id).size();
+
+                std::vector<Vertex> submeshVertices(unique_vertices_map.size());
+                for (auto const& [vertex, index] : unique_vertices_map) {
+                    submeshVertices[index] = vertex;
+                }
+
+                createVertexBuffers(device, submesh.vertexBuffer, submeshVertices);
+                createIndexBuffers(device, submesh.indexBuffer, materialIndices.at(material_id));
+
+                // Debug output
+                std::string textureName = materialIdToTexturePath.count(material_id) ?
+                    materialIdToTexturePath[material_id] : "None";
+                std::cout << "Created submesh for material " << material_id
+                    << " with texture: " << textureName
+                    << " (vertices: " << submeshVertices.size()
+                    << ", indices: " << submesh.indexCount << ")" << std::endl;
+
+                submeshes.push_back(std::move(submesh));
+            }
+        }
+
+        // Handle case where no vertices were found
+        if (!foundAny) {
+            std::cout << "Warning: No vertices found in model: " << filepath << std::endl;
+            boundingBoxMin = glm::vec3(0.0f);
+            boundingBoxMax = glm::vec3(0.0f);
+        }
+        else {
+            std::cout << "Model loaded: " << filepath << std::endl;
+            std::cout << "  Materials found: " << materials.size() << std::endl;
+            std::cout << "  Submeshes created: " << submeshes.size() << std::endl;
+            std::cout << "  Bounding box: min(" << boundingBoxMin.x << ", " << boundingBoxMin.y << ", " << boundingBoxMin.z
+                << ") max(" << boundingBoxMax.x << ", " << boundingBoxMax.y << ", " << boundingBoxMax.z << ")" << std::endl;
+        }
+    }
 
 	// --- Builder Helper Functions ---
 	void Model::Builder::createVertexBuffers(Device& device, std::unique_ptr<Buffer>& buffer, const std::vector<Vertex>& vertices) {
