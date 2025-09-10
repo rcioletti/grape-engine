@@ -168,10 +168,10 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="shaders\simple_shader.frag" />
-    <None Include="shaders\simple_shader.frag.spv" />
-    <None Include="shaders\simple_shader.vert" />
-    <None Include="shaders\simple_shader.vert.spv" />
+    <None Include="resources\shaders\simple_shader.frag" />
+    <None Include="resources\shaders\simple_shader.frag.spv" />
+    <None Include="resources\shaders\simple_shader.vert" />
+    <None Include="resources\shaders\simple_shader.vert.spv" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="core\app.cpp" />
