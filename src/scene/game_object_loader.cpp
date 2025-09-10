@@ -1,6 +1,6 @@
 #include "game_object_loader.hpp"
-#include "model.hpp"
-#include "texture.hpp"
+#include "renderer/model.hpp"
+#include "renderer/texture.hpp"
 #include "game_object.hpp"
 
 #include <memory>
@@ -21,7 +21,7 @@ namespace grape {
 	void GameObjectLoader::loadGameObjects(Device& grapeDevice, Physics physics, GameObject::Map& gameObjects)
 	{
 		// Load the arcade model
-		std::shared_ptr<Model> arcadeModel = Model::createModelFromFile(grapeDevice, "models/Asteroids.obj");
+		std::shared_ptr<Model> arcadeModel = Model::createModelFromFile(grapeDevice, "resources/models/Asteroids.obj");
 
 		// Get the material-to-texture mapping from the builder
 		const auto& modelTexturePaths = arcadeModel->getTexturePaths();
@@ -32,7 +32,7 @@ namespace grape {
 				std::cout << "  Loading texture: " << path << std::endl;
 				try {
 					auto newTexture = std::make_unique<Texture>(grapeDevice);
-					newTexture->createTextureFromFile("textures/" + path);
+					newTexture->createTextureFromFile("resources/textures/" + path);
 					loadedTextures.emplace(path, std::move(newTexture));
 					std::cout << "    Success!" << std::endl;
 				}
@@ -81,16 +81,24 @@ namespace grape {
 		for (int i = 0; i < lightColors.size(); i++) {
 			auto pointLight = GameObject::makePointLight(1.2f);
 			pointLight.color = lightColors[i];
-			auto rotateLight = glm::rotate(
-				glm::mat4(1.f),
-				(i * glm::two_pi<float>()) / lightColors.size(),
-				{ 0.f, -1.f, 0.f });
-			pointLight.transform.translation = glm::vec3(rotateLight * glm::vec4(-1.f, -1.f, -1.f, 1.f));
+
+			// Calculate angle for this light in the circle
+			float angle = (i * glm::two_pi<float>()) / lightColors.size();
+
+			// Position lights in a circle ABOVE the floor
+			float radius = 2.0f;  // Distance from center
+			float height = -2.0f;  // Height above floor (positive Y)
+
+			pointLight.transform.translation = glm::vec3(
+				radius * cos(angle),  // X position (circle)
+				height,               // Y position (above floor)
+				radius * sin(angle)   // Z position (circle)
+			);
+
 			gameObjects.emplace(pointLight.getId(), std::move(pointLight));
 		}
-
 		// Load the plane model for floor
-		std::shared_ptr<Model> planeModel = Model::createModelFromFile(grapeDevice, "models/plane.obj");
+		std::shared_ptr<Model> planeModel = Model::createModelFromFile(grapeDevice, "resources/models/plane.obj");
 
 		// Load textures for plane
 		const auto& planeTexturePaths = planeModel->getTexturePaths();
@@ -98,7 +106,7 @@ namespace grape {
 			if (!path.empty() && loadedTextures.find(path) == loadedTextures.end()) {
 				try {
 					auto newTexture = std::make_unique<Texture>(grapeDevice);
-					newTexture->createTextureFromFile("textures/" + path);
+					newTexture->createTextureFromFile("resources/textures/" + path);
 					loadedTextures.emplace(path, std::move(newTexture));
 				}
 				catch (const std::exception& e) {

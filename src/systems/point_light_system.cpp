@@ -59,7 +59,7 @@ namespace grape {
 		pipelineConfig.bindingDescriptions.clear();
 		pipelineConfig.renderPass = renderPass;
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		grapePipeline = std::make_unique<Pipeline>(grapeDevice, "shaders/point_light.vert.spv", "shaders/point_light.frag.spv", pipelineConfig);
+		grapePipeline = std::make_unique<Pipeline>(grapeDevice, "resources/shaders/point_light.vert.spv", "resources/shaders/point_light.frag.spv", pipelineConfig);
 	}
 
 	void PointLightSystem::update(FrameInfo& frameInfo, GlobalUbo& ubo)

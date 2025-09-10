@@ -57,7 +57,7 @@ namespace grape {
 		Pipeline::defaultPipelineConfigInfo(pipelineConfig);
 		pipelineConfig.renderPass = renderPass;
 		pipelineConfig.pipelineLayout = pipelineLayout;
-		grapePipeline = std::make_unique<Pipeline>(grapeDevice, "shaders/simple_shader.vert.spv", "shaders/simple_shader.frag.spv", pipelineConfig);
+		grapePipeline = std::make_unique<Pipeline>(grapeDevice, "resources/shaders/simple_shader.vert.spv", "resources/shaders/simple_shader.frag.spv", pipelineConfig);
 	}
 
     void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)

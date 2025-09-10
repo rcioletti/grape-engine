@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include "imgui/imgui.h"
-#include "game_object.hpp"
+#include "scene/game_object.hpp"
 
 #include <unordered_map>
 struct GLFWwindow;

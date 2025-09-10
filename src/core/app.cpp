@@ -1,13 +1,15 @@
 #include "app.hpp"
 
-#include "camera.hpp"
+#include "renderer/camera.hpp"
+#include "renderer/buffer.hpp"
+#include "renderer/texture.hpp"
+
 #include "systems/simple_render_system.hpp"
 #include "systems/point_light_system.hpp"
-#include "keyboard_movement_controller.hpp"
-#include "buffer.hpp"
-#include "texture.hpp"
-#include "map_manager.hpp"
-#include "ui.hpp"
+#include "systems/keyboard_movement_controller.hpp"
+#include "systems/map_manager.hpp"
+
+#include "ui/ui.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -120,15 +122,14 @@ namespace grape {
 
 		for (int i = 0; i < globalDescriptorSets.size(); i++) {
 			auto bufferInfo = uboBuffers[i]->descriptorInfo();
-			const int MAX_TEXTURES_IN_SET = 20;
-			std::vector<VkDescriptorImageInfo> descriptorInfos(MAX_TEXTURES_IN_SET);
+			std::vector<VkDescriptorImageInfo> descriptorInfos(MAX_TEXTURES_IN_DESCRIPTOR_SET);
 
 			// Always set index 0 to fallback
 			descriptorInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			descriptorInfos[0].sampler = fallbackTexture->getTextureSampler();
 			descriptorInfos[0].imageView = fallbackTexture->getTextureImageView();
 
-			for (uint32_t j = 1; j < MAX_TEXTURES_IN_SET; j++) {
+			for (uint32_t j = 1; j < MAX_TEXTURES_IN_DESCRIPTOR_SET; j++) {
 				if (j-1 < allUniqueTexturePaths.size()) {
 					const auto& path = allUniqueTexturePaths[j-1];
 					if (loader.getLoadedTextures().find(path) != loader.getLoadedTextures().end()) {
@@ -148,7 +149,7 @@ namespace grape {
 				}
 			}
 
-			uint32_t textureCount = static_cast<uint32_t>(std::min(static_cast<size_t>(MAX_TEXTURES_IN_SET), allUniqueTexturePaths.size()));
+			uint32_t textureCount = static_cast<uint32_t>(std::min(static_cast<size_t>(MAX_TEXTURES_IN_DESCRIPTOR_SET), allUniqueTexturePaths.size()));
 
 			DescriptorWriter writer(*globalSetLayout, *globalPool);
 
@@ -165,7 +166,7 @@ namespace grape {
 		camera.setViewTarget(glm::vec3(-1.f, 2.f, 2.f), glm::vec3(0.f, 0.f, 0.f));
 
 		auto viewerObject = GameObject::createGameObject();
-		viewerObject.transform.translation.z = -2.5f;
+		viewerObject.transform.translation.z = -10.f;
 		KeyboardMovementController cameraController{};
 
 		auto currentTime = std::chrono::high_resolution_clock::now();

@@ -12,6 +12,12 @@
     <Filter Include="Source Files\shaders">
       <UniqueIdentifier>{7095e918-dc8e-42f6-86c5-ca6bde9523d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\systems">
+      <UniqueIdentifier>{2e5753a6-8395-4a3d-8275-684b12c275f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\imgui">
+      <UniqueIdentifier>{e6dfb22e-a9e9-46bc-9560-99fb479cd635}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
@@ -19,57 +25,51 @@
     <Filter Include="Header Files\systems">
       <UniqueIdentifier>{1354087d-ba3d-49fa-92bf-eae9e9e3ed38}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\systems">
-      <UniqueIdentifier>{2e5753a6-8395-4a3d-8275-684b12c275f4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\imgui">
       <UniqueIdentifier>{326f9410-4882-40da-af21-7808d0945a3d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\imgui">
-      <UniqueIdentifier>{e6dfb22e-a9e9-46bc-9560-99fb479cd635}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="keyboard_movement_controller.cpp">
+    <ClCompile Include="systems\keyboard_movement_controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="app.cpp">
+    <ClCompile Include="core\app.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="buffer.cpp">
+    <ClCompile Include="renderer\buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="camera.cpp">
+    <ClCompile Include="renderer\camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="descriptors.cpp">
+    <ClCompile Include="renderer\descriptors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="device.cpp">
+    <ClCompile Include="renderer\device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="game_object.cpp">
+    <ClCompile Include="scene\game_object.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="model.cpp">
+    <ClCompile Include="renderer\model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pipeline.cpp">
+    <ClCompile Include="renderer\pipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="renderer.cpp">
+    <ClCompile Include="renderer\renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="swap_chain.cpp">
+    <ClCompile Include="renderer\swap_chain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="texture.cpp">
+    <ClCompile Include="renderer\texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="window.cpp">
+    <ClCompile Include="core\window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="systems\point_light_system.cpp">
@@ -78,7 +78,7 @@
     <ClCompile Include="systems\simple_render_system.cpp">
       <Filter>Source Files\systems</Filter>
     </ClCompile>
-    <ClCompile Include="physics.cpp">
+    <ClCompile Include="systems\physics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui.cpp">
@@ -102,63 +102,63 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="ui.cpp">
+    <ClCompile Include="ui\ui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="map_manager.cpp">
+    <ClCompile Include="systems\map_manager.cpp">
       <Filter>Source Files\systems</Filter>
     </ClCompile>
-    <ClCompile Include="viewport_renderer.cpp">
+    <ClCompile Include="renderer\viewport_renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="game_object_loader.cpp">
+    <ClCompile Include="scene\game_object_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="keyboard_movement_controller.hpp">
+    <ClInclude Include="systems\keyboard_movement_controller.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="app.hpp">
+    <ClInclude Include="core\app.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="buffer.hpp">
+    <ClInclude Include="renderer\buffer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="camera.hpp">
+    <ClInclude Include="renderer\camera.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="descriptors.hpp">
+    <ClInclude Include="renderer\descriptors.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="device.hpp">
+    <ClInclude Include="renderer\device.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="frame_info.hpp">
+    <ClInclude Include="renderer\frame_info.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="game_object.hpp">
+    <ClInclude Include="scene\game_object.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="model.hpp">
+    <ClInclude Include="renderer\model.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pipeline.hpp">
+    <ClInclude Include="renderer\pipeline.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="renderer.hpp">
+    <ClInclude Include="renderer\renderer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="swap_chain.hpp">
+    <ClInclude Include="renderer\swap_chain.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="texture.hpp">
+    <ClInclude Include="renderer\texture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="utils.hpp">
+    <ClInclude Include="core\utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="window.hpp">
+    <ClInclude Include="core\window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="systems\point_light_system.hpp">
@@ -167,7 +167,7 @@
     <ClInclude Include="systems\simple_render_system.hpp">
       <Filter>Header Files\systems</Filter>
     </ClInclude>
-    <ClInclude Include="physics.hpp">
+    <ClInclude Include="systems\physics.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imconfig.h">
@@ -194,19 +194,19 @@
     <ClInclude Include="imgui\imstb_truetype.h">
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="ui.hpp">
+    <ClInclude Include="ui\ui.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="viewport_renderer.hpp">
+    <ClInclude Include="renderer\viewport_renderer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="map_manager.hpp">
+    <ClInclude Include="systems\map_manager.hpp">
       <Filter>Header Files\systems</Filter>
     </ClInclude>
-    <ClInclude Include="game_loop.hpp">
+    <ClInclude Include="renderer\game_loop.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="game_object_loader.hpp">
+    <ClInclude Include="scene\game_object_loader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

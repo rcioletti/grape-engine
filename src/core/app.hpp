@@ -1,17 +1,17 @@
 #pragma once
-#include "window.hpp"
-#include "device.hpp"
-#include "game_object.hpp"
-#include "renderer.hpp"
-#include "descriptors.hpp"
-#include "physics.hpp"
-#include "viewport_renderer.hpp"
-#include "texture.hpp"
+#include "core/window.hpp"
+#include "renderer/device.hpp"
+#include "scene/game_object.hpp"
+#include "renderer/renderer.hpp"
+#include "renderer/descriptors.hpp"
+#include "systems/physics.hpp"
+#include "renderer/viewport_renderer.hpp"
+#include "renderer/texture.hpp"
 #include <memory>
 #include <vector>
 #include <unordered_map>
 #include <iostream>
-#include "game_object_loader.hpp"
+#include "scene/game_object_loader.hpp"
 
 namespace grape {
     class App {
@@ -36,7 +36,6 @@ namespace grape {
         // Descriptor pools
         std::unique_ptr<DescriptorPool> globalPool{};
         std::unique_ptr<DescriptorPool> imGuiImagePool{};
-        VkDescriptorPool imguiDescriptorPool;
 
         // Game objects and textures
         GameObjectLoader loader{};

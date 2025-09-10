@@ -1,7 +1,7 @@
 #pragma once
 
 #include "device.hpp"
-#include "buffer.hpp"
+#include "renderer/buffer.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

@@ -1,9 +1,10 @@
 #pragma once
 
 #include "game_object_loader.hpp"
-#include "model.hpp"
-#include "texture.hpp"
 #include "game_object.hpp"
+
+#include "renderer/model.hpp"
+#include "renderer/texture.hpp"
 
 #include <vector>
 

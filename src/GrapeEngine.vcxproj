@@ -125,7 +125,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\projects\grape-engine\external\physx\include;D:\projects\grape-engine\external\stb_image;D:\projects\grape-engine\external\rapidjson\include;D:\projects\grape-engine\external\tinyobjloader;C:\VulkanSDK\1.4.321.1\Include;D:\projects\grape-engine\external\glm;D:\projects\grape-engine\external\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);D:\projects\grape-engine\external\physx\include;D:\projects\grape-engine\external\stb_image;D:\projects\grape-engine\external\rapidjson\include;D:\projects\grape-engine\external\tinyobjloader;C:\VulkanSDK\1.4.321.1\Include;D:\projects\grape-engine\external\glm;D:\projects\grape-engine\external\glfw-3.3.9.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -174,13 +174,13 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <None Include="shaders\simple_shader.vert.spv" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="app.cpp" />
-    <ClCompile Include="buffer.cpp" />
-    <ClCompile Include="camera.cpp" />
-    <ClCompile Include="descriptors.cpp" />
-    <ClCompile Include="device.cpp" />
-    <ClCompile Include="game_object.cpp" />
-    <ClCompile Include="game_object_loader.cpp" />
+    <ClCompile Include="core\app.cpp" />
+    <ClCompile Include="renderer\buffer.cpp" />
+    <ClCompile Include="renderer\camera.cpp" />
+    <ClCompile Include="renderer\descriptors.cpp" />
+    <ClCompile Include="renderer\device.cpp" />
+    <ClCompile Include="scene\game_object.cpp" />
+    <ClCompile Include="scene\game_object_loader.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
@@ -188,31 +188,31 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClCompile Include="imgui\imgui_impl_vulkan.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="keyboard_movement_controller.cpp" />
+    <ClCompile Include="systems\keyboard_movement_controller.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="map_manager.cpp" />
-    <ClCompile Include="model.cpp" />
-    <ClCompile Include="physics.cpp" />
-    <ClCompile Include="pipeline.cpp" />
-    <ClCompile Include="renderer.cpp" />
-    <ClCompile Include="swap_chain.cpp" />
+    <ClCompile Include="systems\map_manager.cpp" />
+    <ClCompile Include="renderer\model.cpp" />
+    <ClCompile Include="systems\physics.cpp" />
+    <ClCompile Include="renderer\pipeline.cpp" />
+    <ClCompile Include="renderer\renderer.cpp" />
+    <ClCompile Include="renderer\swap_chain.cpp" />
     <ClCompile Include="systems\point_light_system.cpp" />
     <ClCompile Include="systems\simple_render_system.cpp" />
-    <ClCompile Include="texture.cpp" />
-    <ClCompile Include="ui.cpp" />
-    <ClCompile Include="viewport_renderer.cpp" />
-    <ClCompile Include="window.cpp" />
+    <ClCompile Include="renderer\texture.cpp" />
+    <ClCompile Include="ui\ui.cpp" />
+    <ClCompile Include="renderer\viewport_renderer.cpp" />
+    <ClCompile Include="core\window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="app.hpp" />
-    <ClInclude Include="buffer.hpp" />
-    <ClInclude Include="camera.hpp" />
-    <ClInclude Include="descriptors.hpp" />
-    <ClInclude Include="device.hpp" />
-    <ClInclude Include="frame_info.hpp" />
-    <ClInclude Include="game_loop.hpp" />
-    <ClInclude Include="game_object.hpp" />
-    <ClInclude Include="game_object_loader.hpp" />
+    <ClInclude Include="core\app.hpp" />
+    <ClInclude Include="renderer\buffer.hpp" />
+    <ClInclude Include="renderer\camera.hpp" />
+    <ClInclude Include="renderer\descriptors.hpp" />
+    <ClInclude Include="renderer\device.hpp" />
+    <ClInclude Include="renderer\frame_info.hpp" />
+    <ClInclude Include="renderer\game_loop.hpp" />
+    <ClInclude Include="scene\game_object.hpp" />
+    <ClInclude Include="scene\game_object_loader.hpp" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_glfw.h" />
@@ -221,20 +221,20 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
-    <ClInclude Include="keyboard_movement_controller.hpp" />
-    <ClInclude Include="map_manager.hpp" />
-    <ClInclude Include="model.hpp" />
-    <ClInclude Include="physics.hpp" />
-    <ClInclude Include="pipeline.hpp" />
-    <ClInclude Include="renderer.hpp" />
-    <ClInclude Include="swap_chain.hpp" />
+    <ClInclude Include="systems\keyboard_movement_controller.hpp" />
+    <ClInclude Include="systems\map_manager.hpp" />
+    <ClInclude Include="renderer\model.hpp" />
+    <ClInclude Include="systems\physics.hpp" />
+    <ClInclude Include="renderer\pipeline.hpp" />
+    <ClInclude Include="renderer\renderer.hpp" />
+    <ClInclude Include="renderer\swap_chain.hpp" />
     <ClInclude Include="systems\point_light_system.hpp" />
     <ClInclude Include="systems\simple_render_system.hpp" />
-    <ClInclude Include="texture.hpp" />
-    <ClInclude Include="ui.hpp" />
-    <ClInclude Include="utils.hpp" />
-    <ClInclude Include="viewport_renderer.hpp" />
-    <ClInclude Include="window.hpp" />
+    <ClInclude Include="renderer\texture.hpp" />
+    <ClInclude Include="ui\ui.hpp" />
+    <ClInclude Include="core\utils.hpp" />
+    <ClInclude Include="renderer\viewport_renderer.hpp" />
+    <ClInclude Include="core\window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

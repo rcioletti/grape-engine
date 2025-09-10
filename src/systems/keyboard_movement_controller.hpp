@@ -1,7 +1,8 @@
 #pragma once
 
-#include "game_object.hpp"
-#include "window.hpp"
+#include "scene/game_object.hpp"
+
+#include "core/window.hpp"
 
 namespace grape {
 	class KeyboardMovementController {
