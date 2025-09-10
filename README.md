@@ -1,19 +1,48 @@
-# Grape Engine
-C++ Game Engine
+# 🍇 Grape Engine
 
-This game engine is being developed by me to be used in game jams 
+C++ game engine for quick prototypes, game jams and tinkering with graphics and tools.  
+Grape Engine focuses on Vulkan rendering, a lightweight editor, and a straightforward game object system to make experimentation easy.
 
 ## Features
 
-  * Deploy games on Windows or Linux using [Vulkan](https://www.vulkan.org/)
-  * Develop quick prototypes or advanced 3D Games
-  * Cross-platform input support via [GLFW](https://www.glfw.org/)
-  * Nvidia PhysX as the physics engine
-  * Engine editor made with [ImGui](https://github.com/ocornut/imgui)
-  * Better code organization via maps and game objects
+- Vulkan-based renderer
+- Windowing and input via [GLFW](https://www.glfw.org/)
+- Physics integration with NVIDIA PhysX
+- Editor UI using [Dear ImGui](https://github.com/ocornut/imgui)
+- GameObject / entity management for clearer code structure
+- Support for 3D model import and point lights
 
-https://github.com/rcioletti/grape-engine/assets/18273867/1e442288-b75f-477f-a12f-fe27958b621b
+## Demo
 
-A Demo of the Engine running some 3D models and point lights.
+https://github.com/user-attachments/assets/34a12f82-6e30-403e-9b58-391b92fec415
 
-Most of the GPU overhead is caused by the recording program.
+A short demo showing the engine working.
+
+## Roadmap
+
+- [ ] More physics features: joints, constraints, ragdolls
+- [ ] Asset importer & pipeline improvements
+- [ ] Scene serialization and prefab support
+- [ ] Editor UX improvements (inspector, hierarchy, scene view)
+- [ ] Audio subsystem
+- [ ] Performance profiling and optimization
+- [ ] Example projects / sample games
+
+## Credits / Third-Party Libraries
+
+| Library | Link | Purpose |
+|---|---|---|
+| Vulkan | https://www.vulkan.org/ | Graphics API / renderer |
+| GLFW | https://www.glfw.org/ | Windowing & input |
+| GLM | https://github.com/g-truc/glm | Math library | (add) | (add) |
+| stb (nothings/stb) | https://github.com/nothings/stb | Image loading / utilities | 
+| tinyobjloader | https://github.com/tinyobjloader/tinyobjloader | Model import |
+| Assimp | https://github.com/assimp/assimp | Model import |
+| Dear ImGui | https://github.com/ocornut/imgui | Editor UI | 
+| NVIDIA PhysX | https://github.com/NVIDIA/PhysX | Physics engine |
+
+## License
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
