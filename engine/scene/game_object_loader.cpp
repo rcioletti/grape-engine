@@ -50,7 +50,7 @@ namespace grape {
 		arcade.name = "Arcade";
 		arcade.model = arcadeModel;
 		arcade.transform.scale = glm::vec3(1.f);
-		arcade.transform.rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(1.f, 0.f, 0.f));
+		arcade.transform.rotation = glm::angleAxis(glm::radians(0.0f), glm::vec3(1.f, 0.f, 0.f));
 
 		// Compute bounding box
 		glm::vec3 min, max;
@@ -167,7 +167,7 @@ namespace grape {
 	}
 
 	// Getter for texture descriptor index
-	int GameObjectLoader::getTextureDescriptorIndex(const std::string& texturePath) {
+	int GameObjectLoader::getTextureDescriptorIndex(const std::string& texturePath) const{
 		if (texturePath.empty()) return 0;
 
 		auto it = texturePathToDescriptorIndex.find(texturePath);

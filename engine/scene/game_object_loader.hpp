@@ -28,7 +28,7 @@ namespace grape {
 			return texturePathToDescriptorIndex;
 		}
 
-		int getTextureDescriptorIndex(const std::string& texturePath);
+		int getTextureDescriptorIndex(const std::string& texturePath) const;
 
 	private:
 		std::unordered_map<std::string, std::unique_ptr<Texture>> loadedTextures;

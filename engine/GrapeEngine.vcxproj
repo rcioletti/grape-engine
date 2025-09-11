@@ -179,6 +179,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClCompile Include="renderer\camera.cpp" />
     <ClCompile Include="renderer\descriptors.cpp" />
     <ClCompile Include="renderer\device.cpp" />
+    <ClCompile Include="scene\camera_controller.cpp" />
     <ClCompile Include="scene\game_object.cpp" />
     <ClCompile Include="scene\game_object_loader.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -188,6 +189,9 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClCompile Include="imgui\imgui_impl_vulkan.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="scene\render_manager.cpp" />
+    <ClCompile Include="scene\resource_manager.cpp" />
+    <ClCompile Include="scene\scene_manager.cpp" />
     <ClCompile Include="systems\keyboard_movement_controller.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="systems\map_manager.cpp" />
@@ -211,6 +215,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="renderer\device.hpp" />
     <ClInclude Include="renderer\frame_info.hpp" />
     <ClInclude Include="renderer\game_loop.hpp" />
+    <ClInclude Include="scene\camera_controller.hpp" />
     <ClInclude Include="scene\game_object.hpp" />
     <ClInclude Include="scene\game_object_loader.hpp" />
     <ClInclude Include="imgui\imconfig.h" />
@@ -221,6 +226,9 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="scene\render_manager.hpp" />
+    <ClInclude Include="scene\resource_manager.hpp" />
+    <ClInclude Include="scene\scene_manager.hpp" />
     <ClInclude Include="systems\keyboard_movement_controller.hpp" />
     <ClInclude Include="systems\map_manager.hpp" />
     <ClInclude Include="renderer\model.hpp" />

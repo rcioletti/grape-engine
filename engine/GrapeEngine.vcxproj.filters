@@ -114,6 +114,18 @@
     <ClCompile Include="scene\game_object_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scene\scene_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene\resource_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene\camera_controller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene\render_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="systems\keyboard_movement_controller.hpp">
@@ -209,19 +221,23 @@
     <ClInclude Include="scene\game_object_loader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scene\scene_manager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene\resource_manager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene\camera_controller.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene\render_manager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\simple_shader.frag">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\simple_shader.frag.spv">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\simple_shader.vert.spv">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\simple_shader.vert">
-      <Filter>Source Files\shaders</Filter>
-    </None>
+    <None Include="resources\shaders\simple_shader.frag" />
+    <None Include="resources\shaders\simple_shader.frag.spv" />
+    <None Include="resources\shaders\simple_shader.vert" />
+    <None Include="resources\shaders\simple_shader.vert.spv" />
   </ItemGroup>
 </Project>

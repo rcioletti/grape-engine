@@ -1,50 +1,57 @@
 #pragma once
-#include "core/window.hpp"
+#include "window.hpp"
 #include "renderer/device.hpp"
-#include "scene/game_object.hpp"
 #include "renderer/renderer.hpp"
-#include "renderer/descriptors.hpp"
-#include "systems/physics.hpp"
 #include "renderer/viewport_renderer.hpp"
-#include "renderer/texture.hpp"
+
+#include "scene/scene_manager.hpp"
+#include "scene/resource_manager.hpp"
+#include "scene/camera_controller.hpp"
+#include "scene/render_manager.hpp"
+
+#include "systems/physics.hpp"
+
 #include <memory>
-#include <vector>
-#include <unordered_map>
-#include <iostream>
-#include "scene/game_object_loader.hpp"
+#include <chrono>
 
 namespace grape {
     class App {
     public:
-        static constexpr int WIDTH = 1280;
-        static constexpr int HEIGHT = 720;
+        static constexpr int WIDTH = 800;
+        static constexpr int HEIGHT = 600;
 
         App();
         ~App();
+
         App(const App&) = delete;
         App& operator=(const App&) = delete;
 
         void run();
 
     private:
+        void updateViewport();
+        void renderFrame();
 
-        // Core engine components
+        // Core systems
         Window grapeWindow{ WIDTH, HEIGHT, "Grape Engine" };
         Device grapeDevice{ grapeWindow };
         Renderer grapeRenderer{ grapeWindow, grapeDevice };
+        Physics physics{};
 
-        // Descriptor pools
-        std::unique_ptr<DescriptorPool> globalPool{};
-        std::unique_ptr<DescriptorPool> imGuiImagePool{};
+        // Managers
+        std::unique_ptr<SceneManager> sceneManager;
+        std::unique_ptr<ResourceManager> resourceManager;
+        std::unique_ptr<CameraController> cameraController;
+        std::unique_ptr<RenderManager> renderManager;
 
-        // Game objects and textures
-        GameObjectLoader loader{};
-        GameObject::Map gameObjects;
+        // Viewport management
+        std::unique_ptr<ViewportRenderer> viewportRenderer;
+        VkExtent2D viewportExtent = { 1280, 720 };
+        VkExtent2D pendingViewportExtent = { 1280, 720 };
+        bool needsViewportResize = false;
 
-        // Physics
-        Physics physics;
-
-        // You might want to define this constant
-        static constexpr int MAX_TEXTURES_IN_DESCRIPTOR_SET = 32;
+        // Timing
+        std::chrono::high_resolution_clock::time_point currentTime;
+        float frameTime = 0.0f;
     };
 }
