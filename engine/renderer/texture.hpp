@@ -43,11 +43,11 @@ namespace grape {
 
 	private:
 
-		VkImage textureImage;
-		VkDeviceMemory textureImageMemory;
-		VkImageView textureImageView;
-		VkSampler textureSampler;
+		VkImage textureImage = VK_NULL_HANDLE;           // Initialize
+		VkDeviceMemory textureImageMemory = VK_NULL_HANDLE;  // Initialize  
+		VkImageView textureImageView = VK_NULL_HANDLE;   // Initialize
+		VkSampler textureSampler = VK_NULL_HANDLE;       // Initialize
 		Device& grapeDevice;
-		VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
+		VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 	};
 }

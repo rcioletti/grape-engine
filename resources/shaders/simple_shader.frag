@@ -73,7 +73,7 @@ void main() {
         directionToLight = -normalize(directionToLight);
 
         // Calculate attenuation (quadratic falloff with minimum distance)
-        float attenuation = 1.0 / (1.0 + lightDistance * lightDistance * 0.01);
+        float attenuation = 0.1 / (1.0 + lightDistance * lightDistance * 0.01);
 
         // Calculate diffuse lighting
         float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0.0);

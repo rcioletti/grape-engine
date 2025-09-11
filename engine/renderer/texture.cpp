@@ -15,9 +15,12 @@
 
 namespace grape {
 
-	Texture::Texture(Device& device) : grapeDevice{device}
+	Texture::Texture(Device& device) : grapeDevice{ device },
+		textureImage{ VK_NULL_HANDLE },
+		textureImageMemory{ VK_NULL_HANDLE },
+		textureImageView{ VK_NULL_HANDLE },
+		textureSampler{ VK_NULL_HANDLE }
 	{
-	
 	}
 
 	Texture::~Texture()

@@ -78,53 +78,32 @@ namespace grape {
 
     void ResourceManager::createDescriptorSets(const std::unordered_map<GameObject::id_t, GameObject>& gameObjects, const GameObjectLoader& loader) {
         globalDescriptorSets.resize(SwapChain::MAX_FRAMES_IN_FLIGHT);
-        auto allUniqueTexturePaths = collectUniqueTexturePaths(gameObjects);
 
-        // Setup fallback texture
-        std::unique_ptr<Texture> defaultTexture;
-        const auto& loadedTextures = loader.getLoadedTextures();
+        // Get ordered texture paths from loader instead of collecting them here
+        const auto& orderedTexturePaths = loader.getOrderedTexturePaths();
 
-        if (loadedTextures.empty()) {
-            defaultTexture = std::make_unique<Texture>(device);
-            defaultTexture->createTextureFromColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        }
-        const Texture* fallbackTexture = loadedTextures.empty() ?
-            defaultTexture.get() : loadedTextures.begin()->second.get();
+        // Get fallback texture from loader (index 0 is always fallback)
+        const Texture* fallbackTexture = loader.getTextureAtIndex(0);
 
         for (int i = 0; i < globalDescriptorSets.size(); i++) {
             auto bufferInfo = uboBuffers[i]->descriptorInfo();
             const int MAX_TEXTURES_IN_SET = 20;
             std::vector<VkDescriptorImageInfo> descriptorInfos(MAX_TEXTURES_IN_SET);
 
-            // Setup texture descriptors...
+            // Setup fallback texture at index 0
             descriptorInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             descriptorInfos[0].sampler = fallbackTexture->getTextureSampler();
             descriptorInfos[0].imageView = fallbackTexture->getTextureImageView();
 
+            // Setup actual textures
             for (uint32_t j = 1; j < MAX_TEXTURES_IN_SET; j++) {
-                if (j - 1 < allUniqueTexturePaths.size()) {
-                    const std::string& path = allUniqueTexturePaths[j - 1];  // Explicit reference
-                    auto textureIt = loadedTextures.find(path);
-
-                    if (textureIt != loadedTextures.end()) {
-                        // Make sure you're getting a reference to the unique_ptr, not copying it
-                        const std::unique_ptr<Texture>& texturePtr = textureIt->second;
-                        const Texture& texture = *texturePtr;
-
-                        descriptorInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                        descriptorInfos[j].sampler = texture.getTextureSampler();
-                        descriptorInfos[j].imageView = texture.getTextureImageView();
-                    }
-                    else {
-                        descriptorInfos[j] = descriptorInfos[0]; // Use fallback
-                    }
-                }
-                else {
-                    descriptorInfos[j] = descriptorInfos[0]; // Use fallback
-                }
+                const Texture* texture = loader.getTextureAtIndex(j);
+                descriptorInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                descriptorInfos[j].sampler = texture->getTextureSampler();
+                descriptorInfos[j].imageView = texture->getTextureImageView();
             }
 
-            uint32_t textureCount = static_cast<uint32_t>(std::min(static_cast<size_t>(MAX_TEXTURES_IN_SET), allUniqueTexturePaths.size()));
+            uint32_t textureCount = static_cast<uint32_t>(std::min(static_cast<size_t>(MAX_TEXTURES_IN_SET), orderedTexturePaths.size() + 1));
 
             DescriptorWriter writer(*globalSetLayout, *globalPool);
             if (!writer.writeBuffer(0, &bufferInfo)

@@ -125,38 +125,53 @@ namespace grape {
 
 		// IMPORTANT: Create the texture mapping after all textures are loaded
 		createTexturePathToIndexMapping(gameObjects);
+
+		if (loadedTextures.empty()) {
+			fallbackTexture = std::make_unique<Texture>(grapeDevice);
+			fallbackTexture->createTextureFromColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		}
+
+		std::cout << "Creating fallback texture..." << std::endl;
+		try {
+			fallbackTexture = std::make_unique<Texture>(grapeDevice);
+			fallbackTexture->createTextureFromColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			std::cout << "Fallback texture created successfully at: " << fallbackTexture.get() << std::endl;
+		}
+		catch (const std::exception& e) {
+			std::cout << "Failed to create fallback texture: " << e.what() << std::endl;
+			throw;
+		}
 	}
 
-	void GameObjectLoader::createTexturePathToIndexMapping(GameObject::Map &gameObjects) {
-		texturePathToDescriptorIndex.clear();
-
-		// Collect all unique texture paths from all game objects (same logic as in run())
+	std::vector<std::string> GameObjectLoader::collectUniqueTexturePaths(const GameObject::Map& gameObjects) {
 		std::vector<std::string> allUniqueTexturePaths;
 		for (auto const& [id, obj] : gameObjects) {
 			if (obj.model) {
 				const auto& modelPaths = obj.model->getTexturePaths();
 				for (const auto& path : modelPaths) {
 					if (!path.empty()) {
-						bool found = false;
-						for (const auto& uniquePath : allUniqueTexturePaths) {
-							if (uniquePath == path) {
-								found = true;
-								break;
-							}
-						}
-						if (!found) {
+						// Use std::find instead of manual loop
+						if (std::find(allUniqueTexturePaths.begin(), allUniqueTexturePaths.end(), path) == allUniqueTexturePaths.end()) {
 							allUniqueTexturePaths.push_back(path);
 						}
 					}
 				}
 			}
 		}
+		return allUniqueTexturePaths;
+	}
+
+	void GameObjectLoader::createTexturePathToIndexMapping(GameObject::Map& gameObjects) {
+		texturePathToDescriptorIndex.clear();
+
+		// Use the helper method
+		orderedTexturePaths = collectUniqueTexturePaths(gameObjects);
 
 		std::cout << "Creating texture path to descriptor index mapping:" << std::endl;
 
 		// Map texture paths to their indices (starting from index 1, since 0 is fallback)
-		for (size_t i = 0; i < allUniqueTexturePaths.size(); i++) {
-			const std::string& path = allUniqueTexturePaths[i];
+		for (size_t i = 0; i < orderedTexturePaths.size(); i++) {
+			const std::string& path = orderedTexturePaths[i];
 			int descriptorIndex = static_cast<int>(i + 1); // +1 because index 0 is fallback
 
 			texturePathToDescriptorIndex[path] = descriptorIndex;

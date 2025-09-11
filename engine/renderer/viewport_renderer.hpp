@@ -27,6 +27,8 @@ namespace grape {
 
         VkRenderPass getRenderPass() const { return renderPass; }
 
+        void cleanupImGuiDescriptors();
+
     private:
         Device& device;
 
@@ -43,6 +45,8 @@ namespace grape {
         std::vector<VkImageView> depthImageViews;
 
         VkSampler sampler{ VK_NULL_HANDLE };
+
+        bool imguiDescriptorsCleanedUp = false;
 
         void createResources();
         void cleanup();

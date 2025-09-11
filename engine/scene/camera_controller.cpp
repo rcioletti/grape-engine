@@ -5,7 +5,7 @@ namespace grape {
     CameraController::CameraController() {
         camera.setViewTarget(glm::vec3(-1.f, 2.f, 2.f), glm::vec3(0.f, 0.f, 0.f));
         viewerObject = std::make_unique<GameObject>(GameObject::createGameObject());
-        viewerObject->transform.translation.z = -2.5f;
+        viewerObject->transform.translation.z = -15.f;
     }
 
     void CameraController::update(GLFWwindow* window, float frameTime, float aspectRatio) {

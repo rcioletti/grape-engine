@@ -24,8 +24,39 @@ namespace grape {
     }
 
     App::~App() {
-        vkDeviceWaitIdle(grapeDevice.device());
-        UI::shutdown();
+        std::cout << "Starting App cleanup..." << std::endl;
+
+        try {
+            // Wait for all GPU operations to complete before cleanup
+            vkDeviceWaitIdle(grapeDevice.device());
+
+            // Clean up ImGui descriptors FIRST while ImGui context is still valid
+            if (viewportRenderer) {
+                std::cout << "Cleaning up ImGui descriptors..." << std::endl;
+                viewportRenderer->cleanupImGuiDescriptors();
+            }
+
+            // Shutdown UI after ImGui descriptors are cleaned up
+            std::cout << "Shutting down UI..." << std::endl;
+            UI::shutdown();
+
+            // Now clean up viewport renderer (Vulkan objects only)
+            if (viewportRenderer) {
+                std::cout << "Cleaning up viewport renderer..." << std::endl;
+                viewportRenderer.reset();  // This calls ViewportRenderer destructor
+            }
+
+            // Wait again to ensure everything is done
+            vkDeviceWaitIdle(grapeDevice.device());
+
+            std::cout << "App cleanup completed" << std::endl;
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Exception during App cleanup: " << e.what() << std::endl;
+        }
+        catch (...) {
+            std::cerr << "Unknown exception during App cleanup" << std::endl;
+        }
     }
 
     void App::run() {

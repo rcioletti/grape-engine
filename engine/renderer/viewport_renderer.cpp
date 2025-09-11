@@ -198,110 +198,160 @@ namespace grape {
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
 
-    void ViewportRenderer::cleanup() {
-        std::cout << "Starting cleanup..." << std::endl;
-        std::cout << "Vector sizes - descriptorSets: " << descriptorSets.size()
-            << ", imageViews: " << imageViews.size()
-            << ", framebuffers: " << framebuffers.size() << std::endl;
+    void ViewportRenderer::cleanupImGuiDescriptors() {
+        if (imguiDescriptorsCleanedUp) {
+            return; // Already cleaned up
+        }
 
-        // IMPORTANT: Clean up ImGui descriptors FIRST
+        std::cout << "Cleaning up ImGui descriptors early..." << std::endl;
+
+        // Clean up ImGui descriptors while ImGui context is still valid
         for (size_t i = 0; i < descriptorSets.size(); i++) {
             if (descriptorSets[i] != VK_NULL_HANDLE) {
                 std::cout << "Removing ImGui texture " << i << std::endl;
-                // Remove from ImGui before destroying the underlying resources
-                ImGui_ImplVulkan_RemoveTexture(descriptorSets[i]);
+                try {
+                    ImGui_ImplVulkan_RemoveTexture(descriptorSets[i]);
+                }
+                catch (const std::exception& e) {
+                    std::cout << "Warning: Failed to remove ImGui texture " << i << ": " << e.what() << std::endl;
+                }
+                catch (...) {
+                    std::cout << "Warning: Unknown error removing ImGui texture " << i << std::endl;
+                }
                 descriptorSets[i] = VK_NULL_HANDLE;
             }
         }
 
-        // Wait a bit more to ensure ImGui has processed the removal
+        imguiDescriptorsCleanedUp = true;
+        std::cout << "ImGui descriptors cleaned up successfully" << std::endl;
+    }
+
+    void ViewportRenderer::cleanup() {
+        std::cout << "Starting cleanup..." << std::endl;
+
+        if (device.device() == VK_NULL_HANDLE) {
+            std::cout << "Device is null, skipping cleanup" << std::endl;
+            return;
+        }
+
+        // CRITICAL: Wait for all operations to complete first
         vkDeviceWaitIdle(device.device());
 
-        // Destroy framebuffers first (they depend on image views)
-        for (size_t i = 0; i < framebuffers.size(); i++) {
-            if (framebuffers[i] != VK_NULL_HANDLE) {
-                std::cout << "Destroying framebuffer " << i << std::endl;
-                vkDestroyFramebuffer(device.device(), framebuffers[i], nullptr);
-                framebuffers[i] = VK_NULL_HANDLE;
+        try {
+            // 1. Clean up ImGui descriptors FIRST (before destroying any Vulkan objects they reference)
+            for (size_t i = 0; i < descriptorSets.size(); i++) {
+                if (descriptorSets[i] != VK_NULL_HANDLE) {
+                    std::cout << "Removing ImGui texture " << i << std::endl;
+                    try {
+                        ImGui_ImplVulkan_RemoveTexture(descriptorSets[i]);
+                    }
+                    catch (const std::exception& e) {
+                        std::cout << "Warning: Failed to remove ImGui texture " << i << ": " << e.what() << std::endl;
+                    }
+                    catch (...) {
+                        std::cout << "Warning: Unknown error removing ImGui texture " << i << std::endl;
+                    }
+                    descriptorSets[i] = VK_NULL_HANDLE;
+                }
             }
-        }
 
-        // Destroy render pass
-        if (renderPass != VK_NULL_HANDLE) {
-            std::cout << "Destroying render pass" << std::endl;
-            vkDestroyRenderPass(device.device(), renderPass, nullptr);
-            renderPass = VK_NULL_HANDLE;
-        }
+            // Wait again after ImGui cleanup
+            vkDeviceWaitIdle(device.device());
 
-        // Destroy image views
-        for (size_t i = 0; i < imageViews.size(); i++) {
-            if (imageViews[i] != VK_NULL_HANDLE) {
-                std::cout << "Destroying image view " << i << std::endl;
-                vkDestroyImageView(device.device(), imageViews[i], nullptr);
-                imageViews[i] = VK_NULL_HANDLE;
+            // 2. Destroy framebuffers (they depend on image views and render pass)
+            for (size_t i = 0; i < framebuffers.size(); i++) {
+                if (framebuffers[i] != VK_NULL_HANDLE) {
+                    std::cout << "Destroying framebuffer " << i << std::endl;
+                    vkDestroyFramebuffer(device.device(), framebuffers[i], nullptr);
+                    framebuffers[i] = VK_NULL_HANDLE;
+                }
             }
-        }
 
-        for (size_t i = 0; i < depthImageViews.size(); i++) {
-            if (depthImageViews[i] != VK_NULL_HANDLE) {
-                std::cout << "Destroying depth image view " << i << std::endl;
-                vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
-                depthImageViews[i] = VK_NULL_HANDLE;
+            // 3. Destroy render pass (framebuffers depend on it)
+            if (renderPass != VK_NULL_HANDLE) {
+                std::cout << "Destroying render pass" << std::endl;
+                vkDestroyRenderPass(device.device(), renderPass, nullptr);
+                renderPass = VK_NULL_HANDLE;
             }
-        }
 
-        // Destroy images
-        for (size_t i = 0; i < images.size(); i++) {
-            if (images[i] != VK_NULL_HANDLE) {
-                std::cout << "Destroying image " << i << std::endl;
-                vkDestroyImage(device.device(), images[i], nullptr);
-                images[i] = VK_NULL_HANDLE;
+            // 4. Destroy image views (images depend on them being destroyed first)
+            for (size_t i = 0; i < imageViews.size(); i++) {
+                if (imageViews[i] != VK_NULL_HANDLE) {
+                    std::cout << "Destroying image view " << i << std::endl;
+                    vkDestroyImageView(device.device(), imageViews[i], nullptr);
+                    imageViews[i] = VK_NULL_HANDLE;
+                }
             }
-        }
 
-        for (size_t i = 0; i < depthImages.size(); i++) {
-            if (depthImages[i] != VK_NULL_HANDLE) {
-                std::cout << "Destroying depth image " << i << std::endl;
-                vkDestroyImage(device.device(), depthImages[i], nullptr);
-                depthImages[i] = VK_NULL_HANDLE;
+            for (size_t i = 0; i < depthImageViews.size(); i++) {
+                if (depthImageViews[i] != VK_NULL_HANDLE) {
+                    std::cout << "Destroying depth image view " << i << std::endl;
+                    vkDestroyImageView(device.device(), depthImageViews[i], nullptr);
+                    depthImageViews[i] = VK_NULL_HANDLE;
+                }
             }
-        }
 
-        // Free memory last
-        for (size_t i = 0; i < memories.size(); i++) {
-            if (memories[i] != VK_NULL_HANDLE) {
-                std::cout << "Freeing memory " << i << std::endl;
-                vkFreeMemory(device.device(), memories[i], nullptr);
-                memories[i] = VK_NULL_HANDLE;
+            // 5. Destroy images (must be done before freeing their memory)
+            for (size_t i = 0; i < images.size(); i++) {
+                if (images[i] != VK_NULL_HANDLE) {
+                    std::cout << "Destroying image " << i << std::endl;
+                    vkDestroyImage(device.device(), images[i], nullptr);
+                    images[i] = VK_NULL_HANDLE;
+                }
             }
-        }
 
-        for (size_t i = 0; i < depthMemories.size(); i++) {
-            if (depthMemories[i] != VK_NULL_HANDLE) {
-                std::cout << "Freeing depth memory " << i << std::endl;
-                vkFreeMemory(device.device(), depthMemories[i], nullptr);
-                depthMemories[i] = VK_NULL_HANDLE;
+            for (size_t i = 0; i < depthImages.size(); i++) {
+                if (depthImages[i] != VK_NULL_HANDLE) {
+                    std::cout << "Destroying depth image " << i << std::endl;
+                    vkDestroyImage(device.device(), depthImages[i], nullptr);
+                    depthImages[i] = VK_NULL_HANDLE;
+                }
             }
+
+            // 6. Free memory LAST (after all objects using it are destroyed)
+            for (size_t i = 0; i < memories.size(); i++) {
+                if (memories[i] != VK_NULL_HANDLE) {
+                    std::cout << "Freeing memory " << i << std::endl;
+                    vkFreeMemory(device.device(), memories[i], nullptr);
+                    memories[i] = VK_NULL_HANDLE;
+                }
+            }
+
+            for (size_t i = 0; i < depthMemories.size(); i++) {
+                if (depthMemories[i] != VK_NULL_HANDLE) {
+                    std::cout << "Freeing depth memory " << i << std::endl;
+                    vkFreeMemory(device.device(), depthMemories[i], nullptr);
+                    depthMemories[i] = VK_NULL_HANDLE;
+                }
+            }
+
+            // 7. Destroy sampler (independent, can be done anytime after ImGui cleanup)
+            if (sampler != VK_NULL_HANDLE) {
+                std::cout << "Destroying sampler" << std::endl;
+                vkDestroySampler(device.device(), sampler, nullptr);
+                sampler = VK_NULL_HANDLE;
+            }
+
+            // 8. Clear vectors
+            images.clear();
+            memories.clear();
+            imageViews.clear();
+            framebuffers.clear();
+            descriptorSets.clear();
+            depthImages.clear();
+            depthMemories.clear();
+            depthImageViews.clear();
+
+            std::cout << "Cleanup completed successfully" << std::endl;
         }
-
-        // Destroy sampler
-        if (sampler != VK_NULL_HANDLE) {
-            std::cout << "Destroying sampler" << std::endl;
-            vkDestroySampler(device.device(), sampler, nullptr);
-            sampler = VK_NULL_HANDLE;
+        catch (const std::exception& e) {
+            std::cerr << "Exception during cleanup: " << e.what() << std::endl;
+            // Don't rethrow during destruction - log and continue
         }
-
-        // Clear vectors
-        images.clear();
-        memories.clear();
-        imageViews.clear();
-        framebuffers.clear();
-        descriptorSets.clear();
-        depthImages.clear();
-        depthMemories.clear();
-        depthImageViews.clear();
-
-        std::cout << "Cleanup completed" << std::endl;
+        catch (...) {
+            std::cerr << "Unknown exception during cleanup" << std::endl;
+            // Don't rethrow during destruction - log and continue
+        }
     }
 
     VkDescriptorSet ViewportRenderer::getImGuiDescriptorSet(uint32_t frameIndex) {
@@ -370,37 +420,30 @@ namespace grape {
             std::cerr << "ERROR: Invalid viewport extent (zero): " << newExtent.width << "x" << newExtent.height << std::endl;
             return;
         }
-        if (newExtent.width > 16384 || newExtent.height > 16384) {
-            std::cerr << "ERROR: Viewport extent too large: " << newExtent.width << "x" << newExtent.height << std::endl;
+
+        // Don't resize if dimensions are the same
+        if (newExtent.width == extent.width && newExtent.height == extent.height) {
             return;
-        }
-
-        // Debug: Print current extent values
-        std::cout << "DEBUG: Current extent = {" << extent.width << ", " << extent.height << "}" << std::endl;
-        std::cout << "DEBUG: New extent = {" << newExtent.width << ", " << newExtent.height << "}" << std::endl;
-        std::cout << "DEBUG: extent address = " << &extent << std::endl;
-
-        // Check if extent values are reasonable before comparison
-        if (extent.width > 100000 || extent.height > 100000) {
-            std::cerr << "WARNING: Current extent values seem corrupted, forcing resize" << std::endl;
-        }
-        else {
-            // Don't resize if dimensions are the same
-            if (newExtent.width == extent.width && newExtent.height == extent.height) {
-                std::cout << "Resize skipped - same dimensions: " << newExtent.width << "x" << newExtent.height << std::endl;
-                return;
-            }
         }
 
         std::cout << "Resizing viewport from " << extent.width << "x" << extent.height
             << " to " << newExtent.width << "x" << newExtent.height << std::endl;
 
         try {
-            // CRITICAL: Ensure no operations are pending before cleanup
+            // CRITICAL: Ensure no operations are pending AND that we're not in the middle of another resize
+            static bool resizing = false;
+            if (resizing) {
+                std::cout << "Resize already in progress, skipping..." << std::endl;
+                return;
+            }
+
+            resizing = true;
             vkDeviceWaitIdle(device.device());
             cleanup();
             extent = newExtent;
             createResources();
+            resizing = false;
+
             std::cout << "Viewport resize completed successfully" << std::endl;
         }
         catch (const std::exception& e) {
