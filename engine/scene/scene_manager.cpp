@@ -1,6 +1,7 @@
 #include "scene_manager.hpp"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include "systems/simple_render_system.hpp"
 
 namespace grape {
     SceneManager::SceneManager(Device& device, Physics& physics)
@@ -17,6 +18,16 @@ namespace grape {
     }
 
     void SceneManager::updatePhysics(float frameTime) {
+
+        const auto& debugSettings = DebugSettings::getInstance();
+        static bool lastPhysicsDebugState = false;
+
+        if (debugSettings.showPhysicsDebug != lastPhysicsDebugState) {
+            // Physics debug toggle changed
+            physics.setDebugVisualization(debugSettings.showPhysicsDebug);
+            lastPhysicsDebugState = debugSettings.showPhysicsDebug;
+        }
+
         physics.StepPhysics(frameTime);
 
         for (auto& kv : gameObjects) {

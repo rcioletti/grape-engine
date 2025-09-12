@@ -1,4 +1,5 @@
 #include "physics.hpp"
+#include "renderer/frame_info.hpp"  // Add this include
 
 #include <iostream>
 
@@ -49,8 +50,9 @@ namespace grape {
 		sceneDesc.cpuDispatcher = _dispatcher;
 		sceneDesc.filterShader = PxDefaultSimulationFilterShader;
 		_scene = _physics->createScene(sceneDesc);
-		_scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
-		_scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 2.0f);
+
+		// Initialize debug visualization (disabled by default)
+		setDebugVisualization(false);
 
 		PxPvdSceneClient* pvdClient = _scene->getScenePvdClient();
 		if (pvdClient) {
@@ -73,7 +75,130 @@ namespace grape {
 	{
 		_scene->simulate(deltaTime);
 		_scene->fetchResults(true);
+
+		// Update debug data if visualization is enabled
+		if (debugVisualizationEnabled) {
+			updateDebugData();
+		}
 	}
+
+	void Physics::setDebugVisualization(bool enabled) {
+		debugVisualizationEnabled = enabled;
+
+		if (!_scene) return;
+
+		if (enabled) {
+			// Enable debug visualization
+			_scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_AABBS, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_POINT, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_FORCE, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LOCAL_FRAMES, 1.0f);
+			_scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, 1.0f);
+
+			std::cout << "Physics Debug Visualization: ENABLED" << std::endl;
+		}
+		else {
+			// Disable debug visualization
+			_scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 0.0f);
+			debugLines.clear();
+			std::cout << "Physics Debug Visualization: DISABLED" << std::endl;
+		}
+	}
+
+	void Physics::updateDebugData() {
+		debugLines.clear();
+
+		if (!_scene || !debugVisualizationEnabled) return;
+
+		// Get debug render data from PhysX
+		const PxRenderBuffer& renderBuffer = _scene->getRenderBuffer();
+
+		// Convert PhysX debug lines to our format
+		const PxDebugLine* lines = renderBuffer.getLines();
+		PxU32 numLines = renderBuffer.getNbLines();
+
+		for (PxU32 i = 0; i < numLines; i++) {
+			const PxDebugLine& line = lines[i];
+
+			PhysicsDebugLine debugLine;
+			debugLine.start = glm::vec3(line.pos0.x, line.pos0.y, line.pos0.z);
+			debugLine.end = glm::vec3(line.pos1.x, line.pos1.y, line.pos1.z);
+
+			// Convert PhysX color to glm::vec3 (ARGB to RGB)
+			PxU32 color = line.color0;
+			debugLine.color = glm::vec3(
+				((color >> 16) & 0xFF) / 255.0f,  // Red
+				((color >> 8) & 0xFF) / 255.0f,   // Green
+				(color & 0xFF) / 255.0f           // Blue
+			);
+
+			debugLines.push_back(debugLine);
+		}
+
+		// Also get triangles for solid shapes and convert to wireframe
+		const PxDebugTriangle* triangles = renderBuffer.getTriangles();
+		PxU32 numTriangles = renderBuffer.getNbTriangles();
+
+		for (PxU32 i = 0; i < numTriangles; i++) {
+			const PxDebugTriangle& tri = triangles[i];
+
+			PxU32 color = tri.color0;
+			glm::vec3 wireColor = glm::vec3(
+				((color >> 16) & 0xFF) / 255.0f,
+				((color >> 8) & 0xFF) / 255.0f,
+				(color & 0xFF) / 255.0f
+			);
+
+			// Create 3 lines for triangle wireframe
+			PhysicsDebugLine line1, line2, line3;
+
+			line1.start = glm::vec3(tri.pos0.x, tri.pos0.y, tri.pos0.z);
+			line1.end = glm::vec3(tri.pos1.x, tri.pos1.y, tri.pos1.z);
+			line1.color = wireColor;
+
+			line2.start = glm::vec3(tri.pos1.x, tri.pos1.y, tri.pos1.z);
+			line2.end = glm::vec3(tri.pos2.x, tri.pos2.y, tri.pos2.z);
+			line2.color = wireColor;
+
+			line3.start = glm::vec3(tri.pos2.x, tri.pos2.y, tri.pos2.z);
+			line3.end = glm::vec3(tri.pos0.x, tri.pos0.y, tri.pos0.z);
+			line3.color = wireColor;
+
+			debugLines.push_back(line1);
+			debugLines.push_back(line2);
+			debugLines.push_back(line3);
+		}
+	}
+
+	void Physics::renderDebugLines(FrameInfo& frameInfo) {
+		// For now, this is a placeholder
+		// You'll need to implement line rendering in your Vulkan pipeline
+		// This could be a future enhancement
+
+		// Temporary: Just print debug info
+		if (debugVisualizationEnabled && !debugLines.empty()) {
+			static int frameCounter = 0;
+			if (++frameCounter % 120 == 0) {  // Every 2 seconds at 60fps
+				std::cout << "Physics Debug: " << debugLines.size() << " debug lines" << std::endl;
+			}
+		}
+	}
+
+	PxU32 Physics::getActiveBodyCount() const {
+		if (!_scene) return 0;
+		return _scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC);
+	}
+
+	PxU32 Physics::getContactCount() const {
+		// This is more complex to implement, return 0 for now
+		return 0;
+	}
+
+	// ... rest of your existing methods remain unchanged ...
 
 	PxConvexMesh* Physics::CreateConvexMesh(PxU32 numVertices, const PxVec3* vertices) {
 		PxConvexMeshDesc convexDesc;
@@ -96,12 +221,6 @@ namespace grape {
 
 	PxRigidDynamic* Physics::CreateRigidDynamic(PxTransform transform, bool kinematic)
 	{
-		/*PxMat44 mat;;
-		for (int x = 0; x < 4; x++)
-			for (int y = 0; y < 4; y++)
-				mat[x][y] = matrix[x][y];
-
-		PxTransform transform(mat);*/
 		PxRigidDynamic* body = _physics->createRigidDynamic(transform);
 		body->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic);
 		_scene->addActor(*body);
@@ -110,16 +229,6 @@ namespace grape {
 
 	PxShape* Physics::CreateShapeFromTriangleMesh(PxTriangleMesh* triangleMesh, PxShapeFlags shapeFlags, PxMaterial* material, glm::vec3 scale)
 	{
-		//if (material == NULL) {
-		//	material = _defaultMaterial;
-		//}
-		////PxMeshGeometryFlags flags(~PxMeshGeometryFlag::eTIGHT_BOUNDS | ~PxMeshGeometryFlag::eDOUBLE_SIDED);
-		//// maybe tight bounds did something?? check it out...
-		//PxMeshGeometryFlags flags(~PxMeshGeometryFlag::eDOUBLE_SIDED);
-		//PxTriangleMeshGeometry geometry(triangleMesh, PxMeshScale(PxVec3(scale.x, scale.y, scale.z)), flags);
-
-		//PxShapeFlags shapeFlags(PxShapeFlag::eSCENE_QUERY_SHAPE); // Most importantly NOT eSIMULATION_SHAPE. PhysX does not allow for tri mesh.
-		//return _physics->createShape(geometry, *material, shapeFlags);
 		return nullptr;
 	}
 
@@ -128,8 +237,6 @@ namespace grape {
 			material = _defaultMaterial;
 		}
 		PxShape* shape = _physics->createShape(PxBoxGeometry(width, height, depth), *material, true);
-		//PxMat44 localShapeMatrix = GlmMat4ToPxMat44(shapeOffset.mat4());
-		//PxTransform localShapeTransform(localShapeMatrix);
 		shape->setLocalPose(shapeOffset);
 		return shape;
 	}

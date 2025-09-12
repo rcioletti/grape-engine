@@ -242,6 +242,17 @@ void UI::renderDebugPanel() {
     ImGui::Text("Frame Rate: %.1f FPS", io.Framerate);
     ImGui::Text("Frame Time: %.3f ms", 1000.0f / io.Framerate);
 
+    // Physics debug info
+    if (debugSettings.showPhysicsDebug) {
+        ImGui::Separator();
+        ImGui::Text("Physics Debug Info:");
+        ImGui::Text("Status: Active");
+        ImGui::Text("Debug Lines: %zu", 0); // You'll need to pass physics instance to get actual count
+        // Once you connect physics instance:
+        // ImGui::Text("Active Bodies: %d", physicsInstance->getActiveBodyCount());
+        // ImGui::Text("Debug Lines: %zu", physicsInstance->getDebugLines().size());
+    }
+
     ImGui::End();
 }
 

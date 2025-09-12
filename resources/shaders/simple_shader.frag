@@ -93,7 +93,7 @@ void main() {
         if (lightDistance < 0.01) lightDistance = 0.01;
         directionToLight = normalize(directionToLight);
 
-        float attenuation = 1.0 / (1.0 + lightDistance * lightDistance * 0.01);
+        float attenuation = 0.1 / (1.0 + lightDistance * lightDistance * 0.01);
         float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0.0);
         vec3 lightIntensity = light.color.xyz * light.color.w * attenuation;
 
