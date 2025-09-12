@@ -27,6 +27,8 @@ public:
     // Your custom UI logic (menus, dockspace, etc)
     static void renderUI();
 
+    static void renderDebugPanel();
+
     static ImVec2 getViewportPanelSize();
 
     static void renderDockspace();

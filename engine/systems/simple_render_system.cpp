@@ -11,58 +11,79 @@
 
 namespace grape {
 
-	struct SimplePushConstantData {
-		glm::mat4 modelMatrix{ 1.f };
-		glm::mat4 normalMatrix{ 1.f };
-		int imgIndex{ 0 };
-	};
+    SimpleRenderSystem::SimpleRenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : grapeDevice{ device }
+    {
+        createPipelineLayout(globalSetLayout);
+        createPipeline(renderPass);
+        createWireframePipeline(renderPass);  // Create wireframe pipeline
+    }
 
-	SimpleRenderSystem::SimpleRenderSystem(Device& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout) : grapeDevice{device}
-	{
-		createPipelineLayout(globalSetLayout);
-		createPipeline(renderPass);
-	}
+    SimpleRenderSystem::~SimpleRenderSystem()
+    {
+        vkDestroyPipelineLayout(grapeDevice.device(), pipelineLayout, nullptr);
+    }
 
-	SimpleRenderSystem::~SimpleRenderSystem()
-	{
-		vkDestroyPipelineLayout(grapeDevice.device(), pipelineLayout, nullptr);
-	}
+    void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
+    {
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(SimplePushConstantData);  // Now includes debugMode
 
-	void SimpleRenderSystem::createPipelineLayout(VkDescriptorSetLayout globalSetLayout)
-	{
-		VkPushConstantRange pushConstantRange{};
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(SimplePushConstantData);
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
 
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ globalSetLayout };
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+        if (vkCreatePipelineLayout(grapeDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create pipeline layout!");
+        }
+    }
 
-		if (vkCreatePipelineLayout(grapeDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create pipeline layout!");
-		}
-	}
+    void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
+    {
+        assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
-	void SimpleRenderSystem::createPipeline(VkRenderPass renderPass)
-	{
-		assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+        PipelineConfigInfo pipelineConfig{};
+        Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+        pipelineConfig.renderPass = renderPass;
+        pipelineConfig.pipelineLayout = pipelineLayout;
+        grapePipeline = std::make_unique<Pipeline>(grapeDevice, "resources/shaders/simple_shader.vert.spv", "resources/shaders/simple_shader.frag.spv", pipelineConfig);
+    }
 
-		PipelineConfigInfo pipelineConfig{};
-		Pipeline::defaultPipelineConfigInfo(pipelineConfig);
-		pipelineConfig.renderPass = renderPass;
-		pipelineConfig.pipelineLayout = pipelineLayout;
-		grapePipeline = std::make_unique<Pipeline>(grapeDevice, "resources/shaders/simple_shader.vert.spv", "resources/shaders/simple_shader.frag.spv", pipelineConfig);
-	}
+    void SimpleRenderSystem::createWireframePipeline(VkRenderPass renderPass)
+    {
+        assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
+
+        PipelineConfigInfo pipelineConfig{};
+        Pipeline::defaultPipelineConfigInfo(pipelineConfig);
+
+        // Enable wireframe mode
+        pipelineConfig.rasterizationInfo.polygonMode = VK_POLYGON_MODE_LINE;
+        pipelineConfig.rasterizationInfo.lineWidth = 1.0f;
+
+        pipelineConfig.renderPass = renderPass;
+        pipelineConfig.pipelineLayout = pipelineLayout;
+        grapeWireframePipeline = std::make_unique<Pipeline>(grapeDevice, "resources/shaders/simple_shader.vert.spv", "resources/shaders/simple_shader.frag.spv", pipelineConfig);
+    }
 
     void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo)
     {
-        grapePipeline->bind(frameInfo.commandBuffer);
+        // Get debug settings
+        const auto& debugSettings = DebugSettings::getInstance();
+
+        // Choose pipeline based on wireframe mode
+        if (debugSettings.showWireframe && grapeWireframePipeline) {
+            grapeWireframePipeline->bind(frameInfo.commandBuffer);
+        }
+        else {
+            grapePipeline->bind(frameInfo.commandBuffer);
+        }
+
         vkCmdBindDescriptorSets(
             frameInfo.commandBuffer,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -80,6 +101,7 @@ namespace grape {
             SimplePushConstantData push{};
             push.modelMatrix = obj.transform.mat4();
             push.normalMatrix = obj.transform.normalMatrix();
+            push.debugMode = static_cast<int>(debugSettings.currentMode);  // Set debug mode
 
             // Get the texture paths from the model
             const auto& modelTexturePaths = obj.model->getTexturePaths();

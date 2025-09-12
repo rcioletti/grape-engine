@@ -24,10 +24,22 @@ layout(set = 0, binding = 0) uniform GlobalUbo {
 
 layout(set = 0, binding = 1) uniform sampler2D textures[];
 
+// Debug modes enum - keep in sync with C++ code
+#define DEBUG_MODE_NORMAL 0
+#define DEBUG_MODE_SHOW_NORMALS 1
+#define DEBUG_MODE_SHOW_UVS 2
+#define DEBUG_MODE_SHOW_WORLD_POS 3
+#define DEBUG_MODE_SHOW_LIGHT_DISTANCE 4
+#define DEBUG_MODE_SHOW_LIGHT_DIRECTION 5
+#define DEBUG_MODE_SHOW_DOT_PRODUCT 6
+#define DEBUG_MODE_TEXTURE_ONLY 7
+#define DEBUG_MODE_LIGHTING_ONLY 8
+
 layout(push_constant) uniform Push {
     mat4 modelMatrix;
     mat4 normalMatrix;
     int imgIndex;
+    int debugMode;  // Add debug mode to push constants
 } push;
 
 void main() {
@@ -37,111 +49,90 @@ void main() {
 
     // Ensure we have a valid surface normal
     vec3 surfaceNormal = normalize(fragNormalWorld);
-
-    // Check if normal is valid (not zero vector)
     if (length(surfaceNormal) < 0.1) {
-        surfaceNormal = vec3(0.0, 1.0, 0.0); // Default up vector
+        surfaceNormal = vec3(0.0, 1.0, 0.0);
     }
 
-    // Initialize lighting components
+    // Early exit for debug modes that don't need lighting calculations
+    if (push.debugMode == DEBUG_MODE_SHOW_NORMALS) {
+        outColor = vec4(surfaceNormal * 0.5 + 0.5, 1.0);
+        return;
+    }
+
+    if (push.debugMode == DEBUG_MODE_SHOW_UVS) {
+        outColor = vec4(fragTexCoord, 0.0, 1.0);
+        return;
+    }
+
+    if (push.debugMode == DEBUG_MODE_SHOW_WORLD_POS) {
+        outColor = vec4(abs(fragPosWorld) * 0.1, 1.0);
+        return;
+    }
+
+    if (push.debugMode == DEBUG_MODE_TEXTURE_ONLY) {
+        outColor = texColor;
+        return;
+    }
+
+    // Calculate lighting for remaining debug modes and normal rendering
     vec3 ambientLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
     vec3 diffuseLight = vec3(0.0);
     vec3 specularLight = vec3(0.0);
 
-    // Get camera position and view direction
     vec3 cameraPosWorld = ubo.invView[3].xyz;
     vec3 viewDirection = normalize(cameraPosWorld - fragPosWorld);
-
-    // Debug: Ensure we have lights to process
     int numLights = max(0, min(ubo.numLights, 10));
 
     // Process each point light
     for (int i = 0; i < numLights; i++) {
         PointLight light = ubo.pointLights[i];
-
-        // Calculate direction to light
         vec3 lightPos = light.position.xyz;
         vec3 directionToLight = lightPos - fragPosWorld;
         float lightDistance = length(directionToLight);
 
-        // Avoid division by zero and ensure reasonable distance
-        if (lightDistance < 0.01) {
-            lightDistance = 0.01;
-        }
+        if (lightDistance < 0.01) lightDistance = 0.01;
+        directionToLight = normalize(directionToLight);
 
-        // Normalize direction to light
-        directionToLight = -normalize(directionToLight);
-
-        // Calculate attenuation (quadratic falloff with minimum distance)
-        float attenuation = 0.1 / (1.0 + lightDistance * lightDistance * 0.01);
-
-        // Calculate diffuse lighting
+        float attenuation = 1.0 / (1.0 + lightDistance * lightDistance * 0.01);
         float cosAngIncidence = max(dot(surfaceNormal, directionToLight), 0.0);
-
-        // Light intensity
         vec3 lightIntensity = light.color.xyz * light.color.w * attenuation;
 
-        // Add diffuse contribution
         diffuseLight += lightIntensity * cosAngIncidence;
 
-        // Calculate specular lighting (Blinn-Phong)
         if (cosAngIncidence > 0.0) {
             vec3 halfAngle = normalize(directionToLight + viewDirection);
-            float specularFactor = max(dot(surfaceNormal, halfAngle), 0.0);
-
-            // Apply shininess
-            float shininess = 32.0; // You might want to make this a uniform
-            specularFactor = pow(specularFactor, shininess);
-
-            // Add specular contribution
+            float specularFactor = pow(max(dot(surfaceNormal, halfAngle), 0.0), 32.0);
             specularLight += lightIntensity * specularFactor;
+        }
+
+        // Handle light-specific debug modes (using first light)
+        if (i == 0) {
+            if (push.debugMode == DEBUG_MODE_SHOW_LIGHT_DISTANCE) {
+                float normalizedDist = 1.0 - clamp(lightDistance / 10.0, 0.0, 1.0);
+                outColor = vec4(vec3(normalizedDist), 1.0);
+                return;
+            }
+
+            if (push.debugMode == DEBUG_MODE_SHOW_LIGHT_DIRECTION) {
+                outColor = vec4(directionToLight * 0.5 + 0.5, 1.0);
+                return;
+            }
+
+            if (push.debugMode == DEBUG_MODE_SHOW_DOT_PRODUCT) {
+                outColor = vec4(vec3(cosAngIncidence), 1.0);
+                return;
+            }
         }
     }
 
-    // Combine all lighting components
+    // Final color calculation
     vec3 finalColor = (ambientLight + diffuseLight) * texColor.rgb + specularLight;
 
-    // Output final color
+    if (push.debugMode == DEBUG_MODE_LIGHTING_ONLY) {
+        outColor = vec4(diffuseLight + specularLight, 1.0);
+        return;
+    }
+
+    // Normal rendering
     outColor = vec4(finalColor, texColor.a);
-
-    // STEP-BY-STEP DEBUG - Try these one at a time:
-
-    // 1. Check normals (both sides green = normals are correct)
-    // outColor = vec4(surfaceNormal * 0.5 + 0.5, 1.0);
-
-    // 2. Check light distance - visualize distance to first light
-    // if (numLights > 0) {
-    //     float dist = length(ubo.pointLights[0].position.xyz - fragPosWorld);
-    //     outColor = vec4(vec3(1.0 - clamp(dist / 10.0, 0.0, 1.0)), 1.0);
-    // }
-
-    // 3. Show light direction vectors (should point towards light)
-    // if (numLights > 0) {
-    //     vec3 lightDir = normalize(ubo.pointLights[0].position.xyz - fragPosWorld);
-    //     outColor = vec4(lightDir * 0.5 + 0.5, 1.0);
-    // }
-
-    // 4. Check dot product between normal and light direction
-    // if (numLights > 0) {
-    //     vec3 lightDir = normalize(ubo.pointLights[0].position.xyz - fragPosWorld);
-    //     float dotProduct = dot(surfaceNormal, lightDir);
-    //     outColor = vec4(vec3(dotProduct), 1.0);
-    // }
-
-    // 5. Show world position to check coordinate system
-    //outColor = vec4(abs(fragPosWorld) * 0.1, 1.0);
-
-    // 6. Show light position relative to fragment
-    // if (numLights > 0) {
-    //     vec3 lightPos = ubo.pointLights[0].position.xyz;
-    //     outColor = vec4(abs(lightPos - fragPosWorld) * 0.1, 1.0);
-    // }
-
-    // 7. Check if light is actually above the floor
-    // if (numLights > 0) {
-    //     float lightHeight = ubo.pointLights[0].position.y;
-    //     float floorHeight = fragPosWorld.y;
-    //     float heightDiff = lightHeight - floorHeight;
-    //     outColor = vec4(vec3(heightDiff > 0.0 ? 1.0 : 0.0), 1.0);
-    // }
 }

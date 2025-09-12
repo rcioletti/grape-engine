@@ -1,6 +1,7 @@
 #include "ui.hpp"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_vulkan.h"
+#include "systems/simple_render_system.hpp"
 
 #include <stdexcept>
 #include <unordered_map>
@@ -147,6 +148,101 @@ void UI::shutdown() {
 void UI::renderUI() {
     renderDockspace();
     renderModelsPanel();
+    renderDebugPanel();
+}
+
+void UI::renderDebugPanel() {
+    auto& debugSettings = DebugSettings::getInstance();
+
+    ImGui::Begin("Debug Settings");
+
+    // Shader debug modes
+    ImGui::Text("Shader Debug Modes:");
+    ImGui::Separator();
+
+    const char* debugModeNames[] = {
+        "Normal Rendering",
+        "Show Normals",
+        "Show UVs",
+        "Show World Position",
+        "Show Light Distance",
+        "Show Light Direction",
+        "Show Dot Product",
+        "Texture Only",
+        "Lighting Only"
+    };
+
+    int currentModeIndex = static_cast<int>(debugSettings.currentMode);
+    if (ImGui::Combo("Debug Mode", &currentModeIndex, debugModeNames, IM_ARRAYSIZE(debugModeNames))) {
+        debugSettings.currentMode = static_cast<DebugMode>(currentModeIndex);
+    }
+
+    // Add helpful descriptions for each mode
+    if (ImGui::IsItemHovered()) {
+        const char* descriptions[] = {
+            "Standard PBR rendering with lighting",
+            "Visualize surface normals as RGB colors",
+            "Show UV coordinates as red/green colors",
+            "Display world space positions",
+            "Show distance to first light source",
+            "Visualize light direction vectors",
+            "Show dot product between normals and light",
+            "Display textures without lighting",
+            "Show only lighting contribution"
+        };
+        ImGui::SetTooltip("%s", descriptions[currentModeIndex]);
+    }
+
+    ImGui::Separator();
+
+    // Other debug toggles
+    ImGui::Text("Rendering Options:");
+    ImGui::Checkbox("Wireframe Mode", &debugSettings.showWireframe);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Toggle wireframe rendering (requires pipeline recreation)");
+    }
+
+    ImGui::Checkbox("Physics Debug", &debugSettings.showPhysicsDebug);
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Show physics collision shapes and debug info");
+    }
+
+    ImGui::Separator();
+
+    // Quick preset buttons
+    ImGui::Text("Quick Presets:");
+    if (ImGui::Button("Reset to Normal")) {
+        debugSettings.currentMode = DebugMode::NORMAL;
+        debugSettings.showWireframe = false;
+        debugSettings.showPhysicsDebug = false;
+    }
+    ImGui::SameLine();
+
+    if (ImGui::Button("Debug Lighting")) {
+        debugSettings.currentMode = DebugMode::LIGHTING_ONLY;
+        debugSettings.showWireframe = false;
+    }
+
+    if (ImGui::Button("Debug Normals")) {
+        debugSettings.currentMode = DebugMode::SHOW_NORMALS;
+        debugSettings.showWireframe = true;
+    }
+    ImGui::SameLine();
+
+    if (ImGui::Button("Debug Textures")) {
+        debugSettings.currentMode = DebugMode::TEXTURE_ONLY;
+        debugSettings.showWireframe = false;
+    }
+
+    ImGui::Separator();
+
+    // Performance info section
+    ImGui::Text("Performance Info:");
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::Text("Frame Rate: %.1f FPS", io.Framerate);
+    ImGui::Text("Frame Time: %.3f ms", 1000.0f / io.Framerate);
+
+    ImGui::End();
 }
 
 void UI::renderDockspace() {

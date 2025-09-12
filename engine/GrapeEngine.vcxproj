@@ -142,6 +142,10 @@ copy /Y "$(SolutionDir)external\dll_debug\PhysXCooking_64.dll" "$(TargetDir)Phys
 copy /Y "$(SolutionDir)external\dll_debug\PhysXFoundation_64.dll" "$(TargetDir)PhysXFoundation_64.dll"
 copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRuntime_64.dll"</Command>
     </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>cd $(ProjectDir)
+ compile_shaders.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
