@@ -123,6 +123,19 @@ namespace grape {
 		floor.transform.scale = glm::vec3(10.f, 1.f, 10.f);
 		gameObjects.emplace(floor.getId(), std::move(floor));
 
+		std::shared_ptr<Model> trashModel = Model::createModelFromFile(grapeDevice, "resources/models/trash_box_fixes.obj");
+
+		auto newTexture = std::make_unique<Texture>(grapeDevice);
+		newTexture->createTextureFromFile("resources/textures/trash_box_BaseColor.tga.png");
+		loadedTextures.emplace("trash_box_BaseColor.tga.png", std::move(newTexture));
+
+		auto trash = GameObject::createGameObject();
+		trash.name = "Trash";
+		trash.model = trashModel;
+		trash.transform.translation = glm::vec3(0.f, -1.f, 0.f);
+		trash.transform.scale = glm::vec3(1.5f, 1.f, 1.5f);
+		gameObjects.emplace(trash.getId(), std::move(trash));
+
 		// IMPORTANT: Create the texture mapping after all textures are loaded
 		createTexturePathToIndexMapping(gameObjects);
 

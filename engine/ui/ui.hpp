@@ -29,6 +29,10 @@ public:
 
     static void renderDebugPanel();
 
+    static void renderContentBrowser();
+
+    static void renderSceneInspector();
+
     static ImVec2 getViewportPanelSize();
 
     static void renderDockspace();

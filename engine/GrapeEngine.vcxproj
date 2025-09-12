@@ -219,6 +219,7 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="renderer\device.hpp" />
     <ClInclude Include="renderer\frame_info.hpp" />
     <ClInclude Include="renderer\game_loop.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="scene\camera_controller.hpp" />
     <ClInclude Include="scene\game_object.hpp" />
     <ClInclude Include="scene\game_object_loader.hpp" />
@@ -247,6 +248,9 @@ copy /Y "$(SolutionDir)external\dll_debug\PVDRuntime_64.dll" "$(TargetDir)PVDRun
     <ClInclude Include="core\utils.hpp" />
     <ClInclude Include="renderer\viewport_renderer.hpp" />
     <ClInclude Include="core\window.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="GrapeEngine.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

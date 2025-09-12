@@ -24,6 +24,7 @@ namespace grape {
 
 	private:
 		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+		void setWindowIcon(const char* iconPath);
 		void initWindow();
 
 		int width;

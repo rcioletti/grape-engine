@@ -233,11 +233,19 @@
     <ClInclude Include="scene\render_manager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\simple_shader.frag" />
     <None Include="resources\shaders\simple_shader.frag.spv" />
     <None Include="resources\shaders\simple_shader.vert" />
     <None Include="resources\shaders\simple_shader.vert.spv" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="GrapeEngine.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

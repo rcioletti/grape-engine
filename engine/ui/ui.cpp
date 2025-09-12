@@ -149,6 +149,8 @@ void UI::renderUI() {
     renderDockspace();
     renderModelsPanel();
     renderDebugPanel();
+    renderContentBrowser();
+    renderSceneInspector();
 }
 
 void UI::renderDebugPanel() {
@@ -256,6 +258,53 @@ void UI::renderDebugPanel() {
     ImGui::End();
 }
 
+void UI::renderContentBrowser() {
+    ImGui::Begin("Content Browser");
+    
+	ImGui::End();
+}
+
+void UI::renderSceneInspector() {
+    static int selectedIndex = 0;
+    static std::vector<uint32_t> ids;
+    static std::vector<std::string> names;
+
+    ImGui::Begin("Scene Inspector");
+
+    if (!ids.empty()) {
+        if (ImGui::Combo("Select Model", &selectedIndex,
+            [](void* data, int idx, const char** out_text) {
+                const auto& names = *static_cast<const std::vector<std::string>*>(data);
+                *out_text = names[idx].c_str();
+                return true;
+            },
+            (void*)&names, (int)names.size())) {
+            // Selection changed
+        }
+
+        auto& obj = s_gameObjects->at(ids[selectedIndex]);
+
+        // Show field names above sliders
+        ImGui::Text("Position");
+        ImGui::SliderFloat3("##Position", &obj.transform.translation.x, -10.0f, 10.0f, "%.2f");
+
+        ImGui::Text("Rotation");
+        glm::vec3 euler = glm::degrees(glm::eulerAngles(obj.transform.rotation));
+        if (ImGui::SliderFloat3("##Rotation", &euler.x, -180.0f, 180.0f, "%.1f")) {
+            obj.transform.rotation = glm::quat(glm::radians(euler));
+        }
+
+        ImGui::Text("Scale");
+        ImGui::SliderFloat3("##Scale", &obj.transform.scale.x, 0.01f, 10.0f, "%.2f");
+    }
+    else {
+        ImGui::Text("No models in scene.");
+    }
+
+    ImGui::End();
+}
+
+
 void UI::renderDockspace() {
     static bool opt_fullscreen = true;
     static bool opt_padding = false;
@@ -291,24 +340,6 @@ void UI::renderDockspace() {
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
         ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-    }
-
-    if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("Options")) {
-            ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
-            ImGui::MenuItem("Padding", NULL, &opt_padding);
-            ImGui::Separator();
-
-            if (ImGui::MenuItem("Flag: NoDockingOverCentralNode", "", (dockspace_flags & ImGuiDockNodeFlags_NoDockingOverCentralNode) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoDockingOverCentralNode; }
-            if (ImGui::MenuItem("Flag: NoDockingSplit", "", (dockspace_flags & ImGuiDockNodeFlags_NoDockingSplit) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoDockingSplit; }
-            if (ImGui::MenuItem("Flag: NoUndocking", "", (dockspace_flags & ImGuiDockNodeFlags_NoUndocking) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoUndocking; }
-            if (ImGui::MenuItem("Flag: NoResize", "", (dockspace_flags & ImGuiDockNodeFlags_NoResize) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoResize; }
-            if (ImGui::MenuItem("Flag: AutoHideTabBar", "", (dockspace_flags & ImGuiDockNodeFlags_AutoHideTabBar) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_AutoHideTabBar; }
-            if (ImGui::MenuItem("Flag: PassthruCentralNode", "", (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) != 0, opt_fullscreen)) { dockspace_flags ^= ImGuiDockNodeFlags_PassthruCentralNode; }
-            ImGui::Separator();
-            ImGui::EndMenu();
-        }
-        ImGui::EndMenuBar();
     }
 
     ImGui::End();
