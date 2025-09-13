@@ -14,6 +14,9 @@ namespace {
     bool imguiInitialized = false;
     VkDevice imguiDevice = VK_NULL_HANDLE;
     std::unordered_map<uint32_t, GameObject>* s_gameObjects = nullptr;
+    int s_selectedObjectIndex = -1;
+    uint32_t s_selectedObjectId = 0;
+    std::vector<std::string> s_availableMaterials = { "Default Material" };
 }
 
 void UI::init(GLFWwindow* window, VkInstance instance, VkDevice device, VkPhysicalDevice physicalDevice,
@@ -24,6 +27,11 @@ void UI::init(GLFWwindow* window, VkInstance instance, VkDevice device, VkPhysic
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    io.Fonts->Clear();
+
+    io.Fonts->AddFontFromFileTTF("../resources/fonts/Inter-VariableFont_opsz,wght.ttf", 16.0f);
+    io.Fonts->Build();
 
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -38,8 +46,6 @@ void UI::init(GLFWwindow* window, VkInstance instance, VkDevice device, VkPhysic
     style.Colors[ImGuiCol_TitleBgActive]      = ImVec4(0, 0, 0, 0.7f);
     style.Colors[ImGuiCol_TitleBgCollapsed]   = ImVec4(0, 0, 0, 0.7f);
     style.Colors[ImGuiCol_DockingEmptyBg]     = ImVec4(0, 0, 0, 0.7f);
-
-    // Set tab colors to semi-transparent black
     style.Colors[ImGuiCol_Tab]                = ImVec4(0, 0, 0, 0.7f);
     style.Colors[ImGuiCol_TabActive]          = ImVec4(0, 0, 0, 0.7f);
     style.Colors[ImGuiCol_TabHovered]         = ImVec4(0, 0, 0, 0.9f);
@@ -50,11 +56,15 @@ void UI::init(GLFWwindow* window, VkInstance instance, VkDevice device, VkPhysic
     style.Colors[ImGuiCol_SliderGrab] = ImVec4(0, 0, 0, 0.7f);
     style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0, 0, 0, 0.5f);
     style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0, 0, 0, 0.7f);
-
-    // Add these to your style.Colors setup:
     style.Colors[ImGuiCol_FrameBg]         = ImVec4(0.05f, 0.05f, 0.05f, 1.f);
     style.Colors[ImGuiCol_FrameBgHovered]  = ImVec4(0.03f, 0.03f, 0.03f, 0.8f);
     style.Colors[ImGuiCol_FrameBgActive]   = ImVec4(0.02f, 0.02f, 0.02f, 0.8f);
+
+    style.Colors[ImGuiCol_Header]          = ImVec4(0.106f, 0.0f, 0.149f, 1.0f);
+    style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.106f, 0.0f, 0.149f, 1.0f);
+    style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.106f, 0.0f, 0.149f, 1.0f);
+
+
 
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding = 0.0f;
@@ -265,40 +275,91 @@ void UI::renderContentBrowser() {
 }
 
 void UI::renderSceneInspector() {
-    static int selectedIndex = 0;
     static std::vector<uint32_t> ids;
     static std::vector<std::string> names;
 
     ImGui::Begin("Scene Inspector");
 
+    if (!s_gameObjects) {
+        ImGui::Text("No game objects available.");
+        ImGui::End();
+        return;
+    }
+
+    // Rebuild the list if the size changes
+    if (ids.size() != s_gameObjects->size()) {
+        ids.clear();
+        names.clear();
+        for (const auto& [id, obj] : *s_gameObjects) {
+            ids.push_back(id);
+            if (!obj.name.empty()) {
+                names.push_back(obj.name);
+            }
+            else {
+                names.push_back("GameObject_" + std::to_string(id));
+            }
+        }
+
+        // Validate selection after rebuild
+        if (s_selectedObjectIndex >= (int)ids.size()) {
+            s_selectedObjectIndex = -1;
+            s_selectedObjectId = 0;
+        }
+    }
+
     if (!ids.empty()) {
-        if (ImGui::Combo("Select Model", &selectedIndex,
-            [](void* data, int idx, const char** out_text) {
-                const auto& names = *static_cast<const std::vector<std::string>*>(data);
-                *out_text = names[idx].c_str();
-                return true;
-            },
-            (void*)&names, (int)names.size())) {
-            // Selection changed
+        ImGui::Text("Scene Objects (%zu):", ids.size());
+        ImGui::Separator();
+
+        // List all objects as selectable items
+        for (int i = 0; i < (int)ids.size(); ++i) {
+            bool isSelected = (s_selectedObjectIndex == i);
+
+            // Get object reference to show additional info
+            auto it = s_gameObjects->find(ids[i]);
+            if (it == s_gameObjects->end()) continue;
+
+            const auto& obj = it->second;
+
+            // Create display text with object type info
+            std::string displayText = names[i];
+            if (obj.model) displayText += " [Model]";
+            if (obj.pointLight) displayText += " [Light]";
+            if (obj.hasPhysics()) displayText += " [Physics]";
+
+            if (ImGui::Selectable(displayText.c_str(), isSelected)) {
+                s_selectedObjectIndex = i;
+                s_selectedObjectId = ids[i];
+            }
+
+            // Show selection indicator
+            if (isSelected) {
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.2f, 0.8f, 0.2f, 1.0f), "<--");
+            }
         }
 
-        auto& obj = s_gameObjects->at(ids[selectedIndex]);
+        ImGui::Separator();
 
-        // Show field names above sliders
-        ImGui::Text("Position");
-        ImGui::SliderFloat3("##Position", &obj.transform.translation.x, -10.0f, 10.0f, "%.2f");
-
-        ImGui::Text("Rotation");
-        glm::vec3 euler = glm::degrees(glm::eulerAngles(obj.transform.rotation));
-        if (ImGui::SliderFloat3("##Rotation", &euler.x, -180.0f, 180.0f, "%.1f")) {
-            obj.transform.rotation = glm::quat(glm::radians(euler));
+        // Show selected object quick info
+        if (s_selectedObjectIndex >= 0 && s_selectedObjectIndex < (int)ids.size()) {
+            auto it = s_gameObjects->find(ids[s_selectedObjectIndex]);
+            if (it != s_gameObjects->end()) {
+                const auto& obj = it->second;
+                ImGui::Text("Selected: %s", names[s_selectedObjectIndex].c_str());
+                ImGui::Text("ID: %u", ids[s_selectedObjectIndex]);
+                ImGui::Text("Position: (%.2f, %.2f, %.2f)",
+                    obj.transform.translation.x,
+                    obj.transform.translation.y,
+                    obj.transform.translation.z);
+                ImGui::Text("Color: (%.2f, %.2f, %.2f)", obj.color.r, obj.color.g, obj.color.b);
+            }
         }
-
-        ImGui::Text("Scale");
-        ImGui::SliderFloat3("##Scale", &obj.transform.scale.x, 0.01f, 10.0f, "%.2f");
     }
     else {
-        ImGui::Text("No models in scene.");
+        ImGui::Text("No objects in scene.");
+        s_selectedObjectIndex = -1;
+        s_selectedObjectId = 0;
     }
 
     ImGui::End();
@@ -346,58 +407,238 @@ void UI::renderDockspace() {
 }
 
 void UI::renderModelsPanel() {
-    if (!s_gameObjects) return;
+    ImGui::Begin("Object Viewer");
 
-    static int selectedIndex = 0;
-    static std::vector<uint32_t> ids;
-    static std::vector<std::string> names;
-
-    // Build the list of IDs and names if the size changes
-    if (ids.size() != s_gameObjects->size()) {
-        ids.clear();
-        names.clear();
-        for (const auto& [id, obj] : *s_gameObjects) {
-            ids.push_back(id);
-            if (!obj.name.empty())
-                names.push_back(obj.name);
-            else
-                names.push_back("Object " + std::to_string(id));
-        }
-        if (selectedIndex >= ids.size()) selectedIndex = 0;
+    if (!s_gameObjects) {
+        ImGui::Text("No game objects available.");
+        ImGui::End();
+        return;
     }
 
-    ImGui::Begin("Models");
+    // Check if we have a valid selection
+    if (s_selectedObjectIndex < 0) {
+        ImGui::Text("No object selected.");
+        ImGui::Text("Select an object in the Scene Inspector to edit its properties.");
+        ImGui::End();
+        return;
+    }
 
-    if (!ids.empty()) {
-        if (ImGui::Combo("Select Model", &selectedIndex,
-            [](void* data, int idx, const char** out_text) {
-                const auto& names = *static_cast<const std::vector<std::string>*>(data);
-                *out_text = names[idx].c_str();
-                return true;
-            },
-            (void*)&names, (int)names.size())) {
-            // Selection changed
+    // Verify the selected object still exists
+    auto it = s_gameObjects->find(s_selectedObjectId);
+    if (it == s_gameObjects->end()) {
+        ImGui::Text("Selected object no longer exists.");
+        s_selectedObjectIndex = -1;
+        s_selectedObjectId = 0;
+        ImGui::End();
+        return;
+    }
+
+    auto& obj = it->second;
+
+    // Header with object info
+    ImGui::Text("Editing: %s",
+        obj.name.empty() ? ("GameObject_" + std::to_string(s_selectedObjectId)).c_str() : obj.name.c_str());
+    ImGui::Text("ID: %u", s_selectedObjectId);
+    ImGui::Separator();
+
+    // Object Properties section
+    if (ImGui::CollapsingHeader("Object Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
+        // Name editing
+        static char nameBuffer[128] = "";
+        static bool nameBufferInitialized = false;
+
+        if (!nameBufferInitialized || ImGui::IsWindowAppearing()) {
+            size_t len = obj.name.length();
+            size_t maxCopy = (sizeof(nameBuffer) - 1 < len) ? sizeof(nameBuffer) - 1 : len;
+            memcpy(nameBuffer, obj.name.c_str(), maxCopy);
+            nameBuffer[maxCopy] = '\0';
+            nameBufferInitialized = true;
         }
 
-        auto& obj = s_gameObjects->at(ids[selectedIndex]);
+        if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
+            obj.name = std::string(nameBuffer);
+        }
 
-        // Show field names above sliders
+        // Color picker
+        ImGui::Text("Color");
+        ImGui::ColorEdit3("##ObjectColor", &obj.color.r);
+    }
+
+    ImGui::Spacing();
+
+    // Transform section
+    if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Text("Position");
-        ImGui::SliderFloat3("##Position", &obj.transform.translation.x, -10.0f, 10.0f, "%.2f");
+        if (ImGui::DragFloat3("##Position", &obj.transform.translation.x, 0.1f, -100.0f, 100.0f, "%.2f")) {
+            // If object has physics, update physics transform too
+            if (obj.hasPhysics()) {
+                obj.setPhysicsTransform(obj.transform.translation, obj.transform.rotation);
+            }
+        }
 
-        ImGui::Text("Rotation");
-        glm::vec3 euler = glm::degrees(glm::eulerAngles(obj.transform.rotation));
-        if (ImGui::SliderFloat3("##Rotation", &euler.x, -180.0f, 180.0f, "%.1f")) {
-            obj.transform.rotation = glm::quat(glm::radians(euler));
+        ImGui::Text("Rotation (degrees)");
+        glm::vec3 euler = obj.transform.getEulerDegrees();
+        if (ImGui::DragFloat3("##Rotation", &euler.x, 1.0f, -180.0f, 180.0f, "%.1f")) {
+            obj.transform.setEulerDegrees(euler);
+            if (obj.hasPhysics()) {
+                obj.setPhysicsTransform(obj.transform.translation, obj.transform.rotation);
+            }
         }
 
         ImGui::Text("Scale");
-        ImGui::SliderFloat3("##Scale", &obj.transform.scale.x, 0.01f, 10.0f, "%.2f");
-    } else {
-        ImGui::Text("No models in scene.");
+        ImGui::DragFloat3("##Scale", &obj.transform.scale.x, 0.01f, 0.001f, 20.0f, "%.3f");
+    }
+
+    ImGui::Spacing();
+
+    // Model and Materials section
+    if (obj.model && ImGui::CollapsingHeader("Model & Materials", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Text("Model: %s", obj.model ? "Loaded" : "None");
+
+        if (obj.model) {
+            // For now, we'll assume single material - you can extend this based on your Model class
+            static std::string currentMaterial = "Default Material";
+
+            ImGui::Separator();
+            ImGui::Text("Material Assignment:");
+
+            if (ImGui::BeginCombo("Material", currentMaterial.c_str())) {
+                for (const std::string& material : s_availableMaterials) {
+                    bool isSelected = (currentMaterial == material);
+                    if (ImGui::Selectable(material.c_str(), isSelected)) {
+                        currentMaterial = material;
+                        // Here you would apply the material to your model
+                        // This depends on your Model class implementation
+                        // obj.model->setMaterial(material); // Example
+                    }
+
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            // Material properties button
+            if (currentMaterial != "Default Material") {
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Edit Material")) {
+                    // Open material editor
+                }
+            }
+
+            // Model statistics (if available)
+            ImGui::Separator();
+            ImGui::Text("Model Info:");
+            // You can add model-specific info here based on your Model class
+            // ImGui::Text("Vertices: %d", obj.model->getVertexCount());
+            // ImGui::Text("Triangles: %d", obj.model->getTriangleCount());
+        }
+    }
+
+    ImGui::Spacing();
+
+    // Point Light section
+    if (obj.pointLight && ImGui::CollapsingHeader("Point Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Text("Light Properties:");
+        ImGui::SliderFloat("Intensity", &obj.pointLight->lightIntensity, 0.0f, 100.0f, "%.2f");
+
+        // You can add more light properties here
+        // ImGui::ColorEdit3("Light Color", &obj.lightColor.r); // if you add this to PointLightComponent
+    }
+
+    ImGui::Spacing();
+
+    // Physics section
+    if (obj.hasPhysics() && ImGui::CollapsingHeader("Physics", ImGuiTreeNodeFlags_DefaultOpen)) {
+        auto& physics = *obj.physicsComponent;
+
+        ImGui::Text("Physics Properties:");
+        ImGui::Text("Type: %s", physics.isDynamic ? (physics.isKinematic ? "Kinematic" : "Dynamic") : "Static");
+
+        if (physics.isDynamic) {
+            if (ImGui::SliderFloat("Mass", &physics.mass, 0.1f, 100.0f, "%.2f")) {
+                // Update mass in PhysX
+                if (physics.actor) {
+                    PxRigidDynamic* dynamicActor = static_cast<PxRigidDynamic*>(physics.actor);
+                    PxRigidBodyExt::updateMassAndInertia(*dynamicActor, physics.mass);
+                }
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::Text("Material Properties:");
+
+        bool materialChanged = false;
+        materialChanged |= ImGui::SliderFloat("Static Friction", &physics.staticFriction, 0.0f, 2.0f, "%.2f");
+        materialChanged |= ImGui::SliderFloat("Dynamic Friction", &physics.dynamicFriction, 0.0f, 2.0f, "%.2f");
+        materialChanged |= ImGui::SliderFloat("Restitution", &physics.restitution, 0.0f, 1.0f, "%.2f");
+
+        if (materialChanged && physics.shape) {
+            // Update material properties in PhysX
+            PxMaterial* materials[1];
+            if (physics.shape->getMaterials(materials, 1) == 1) {
+                materials[0]->setStaticFriction(physics.staticFriction);
+                materials[0]->setDynamicFriction(physics.dynamicFriction);
+                materials[0]->setRestitution(physics.restitution);
+            }
+        }
+
+        // Physics controls
+        ImGui::Separator();
+        if (physics.isDynamic && !physics.isKinematic) {
+            if (ImGui::Button("Add Force Up")) {
+                if (physics.actor) {
+                    PxRigidDynamic* dynamicActor = static_cast<PxRigidDynamic*>(physics.actor);
+                    dynamicActor->addForce(PxVec3(0, 10.0f, 0), PxForceMode::eIMPULSE);
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Reset Velocity")) {
+                if (physics.actor) {
+                    PxRigidDynamic* dynamicActor = static_cast<PxRigidDynamic*>(physics.actor);
+                    dynamicActor->setLinearVelocity(PxVec3(0, 0, 0));
+                    dynamicActor->setAngularVelocity(PxVec3(0, 0, 0));
+                }
+            }
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    // Object actions
+    if (ImGui::CollapsingHeader("Actions")) {
+        if (ImGui::Button("Duplicate Object")) {
+            // Create a duplicate of this object
+            // This would depend on your object creation system
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Delete Object")) {
+            // Mark for deletion - you'd handle this in your main loop
+            // Don't delete immediately as we're iterating
+        }
+
+        if (!obj.hasPhysics() && ImGui::Button("Add Physics")) {
+            // This would require access to your Physics system
+            // obj.addPhysicsComponent(yourPhysicsSystem);
+        }
+
+        if (!obj.pointLight && ImGui::Button("Add Point Light")) {
+            obj.pointLight = std::make_unique<PointLightComponent>();
+        }
     }
 
     ImGui::End();
+}
+
+// Add this method to set available materials
+void UI::setAvailableMaterials(const std::vector<std::string>& materials) {
+    s_availableMaterials = materials;
+    if (s_availableMaterials.empty()) {
+        s_availableMaterials.push_back("Default Material");
+    }
 }
 
 void UI::renderViewport(VkDescriptorSet texId, bool isValid, bool isResizing) {

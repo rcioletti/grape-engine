@@ -10,6 +10,7 @@ struct GLFWwindow;
 namespace grape {
 
 class UI {
+
 public:
     // Call once at startup
     static void init(GLFWwindow* window, VkInstance instance, VkDevice device, VkPhysicalDevice physicalDevice,
@@ -40,6 +41,8 @@ public:
     static void renderModelsPanel();
 
     static void setGameObjects(std::unordered_map<uint32_t, GameObject>* objects);
+
+    static void setAvailableMaterials(const std::vector<std::string>& materials);
 };
 
 }

@@ -1,6 +1,6 @@
 #include "window.hpp"
 #include <stdexcept>
-#include <stb_image.h> // Include the image loading library
+#include <stb_image.h>
 
 namespace grape {
 
