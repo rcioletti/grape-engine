@@ -14,7 +14,7 @@ Grape Engine focuses on Vulkan rendering, a lightweight editor, and a straightfo
 
 ## Demo
 
-https://github.com/user-attachments/assets/34a12f82-6e30-403e-9b58-391b92fec415
+https://github.com/user-attachments/assets/11e37a9f-fc65-441a-a758-834a666a7f6c
 
 A short demo showing the engine working.
 
